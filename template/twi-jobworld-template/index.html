@@ -32,12 +32,15 @@
     .day-info { font-size: 14px; color: #888; }
     .close-day-btn { background: #ff6b6b; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; }
     .close-day-btn:hover { background: #ff5252; }
+    .api-offline { background: #ff6b6b !important; color: #fff !important; }
+    .api-online { background: #4ecdc4 !important; color: #000 !important; }
   </style>
 </head>
 <body>
   <h1>🤖 AI Jobworld</h1>
 
   <button class="refresh" onclick="loadAll()">🔄 Refresh</button>
+  <span id="api-status" style="font-size:12px;padding:4px 8px;border-radius:4px;background:#333;color:#888;margin-left:10px;">Checking API...</span>
 
   <div class="card">
     <h2>📊 Metrics</h2>
@@ -101,10 +104,48 @@
 
   <script>
     const API = 'http://localhost:3847/api';
+    const WS_URL = 'ws://localhost:3847';
     const PROJECT_COLORS = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181', '#aa96da', '#fcbad3', '#a8d8ea'];
+    let ws = null;
+    let wsReconnectTimer = null;
+
+    function setApiStatus(online) {
+      const el = document.getElementById('api-status');
+      if (!el) return;
+      el.textContent = online ? 'API Online' : 'API Offline';
+      el.className = online ? 'api-online' : 'api-offline';
+    }
+
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+          setApiStatus(true);
+          clearTimeout(wsReconnectTimer);
+        };
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'event' || msg.type === 'round_start') {
+              loadAll();
+            }
+          } catch (e) {}
+        };
+        ws.onclose = () => {
+          setApiStatus(false);
+          wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+        };
+        ws.onerror = () => {
+          setApiStatus(false);
+        };
+      } catch (e) {
+        setApiStatus(false);
+        wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+      }
+    }
 
     async function loadAll() {
-      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay()]);
+      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop()]);
     }
 
     async function loadProjectChart() {
@@ -210,6 +251,7 @@
         document.getElementById('blocked').textContent = tasks.filter(t => t.status === 'blocked').length;
       } catch (e) {
         console.error('Metrics error:', e);
+        setApiStatus(false);
       }
     }
 
@@ -315,6 +357,7 @@
     loadAll();
     setInterval(loadAll, 5000);
     loadRalphLoop();
+    connectWebSocket();
   </script>
 </body>
 </html>

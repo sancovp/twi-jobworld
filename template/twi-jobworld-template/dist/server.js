@@ -67,7 +67,14 @@ function startServer(port) {
         app.use((_req, res, next) => {
             res.header('Access-Control-Allow-Origin', '*');
             res.header('Access-Control-Allow-Headers', 'Content-Type');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
             next();
+        });
+        app.options('*', (_req, res) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Headers', 'Content-Type');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            res.sendStatus(204);
         });
         // Load existing data
         loadData();
@@ -611,8 +618,8 @@ function setupApiRoutes(app) {
         const agent = createAgent(dept_id, name || 'New Agent', agent_file_path);
         res.json(agent);
     });
-    // Projects
-    app.get('/api/projects', (_req, res) => {
+    // Projects list (raw)
+    app.get('/api/projects/list', (_req, res) => {
         res.json(Object.values(store.projects));
     });
     app.post('/api/projects', (req, res) => {
