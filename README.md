@@ -1,86 +1,97 @@
-# TWI Jobworld Plugin
+# TWI Jobworld
 
-Instantiate AI-powered companies that run themselves.
+**Zero employees. A full company. All AI.**
 
-## What This Is
+Instantiate an AI-powered business that runs itself — content, growth, revenue, research, and engineering all handled by agents you coordinate.
 
-TWI Jobworld is a company simulation engine. Each company has:
-- A CEO that coordinates everything
-- Department agents (Content, Growth, Revenue, Research, Engineering)
-- A web dashboard at `http://localhost:{port}`
-- Event-sourced state in `event-stream/data.json`
+## What You Get
 
-## Enabling the Plugin
+A complete company with:
+- **Content Agent** — writes, schedules, publishes
+- **Growth Agent** — subscriber acquisition, outreach, social
+- **Revenue Agent** — monetization, tiers, tracking
+- **Research Agent** — industry intelligence, competitive analysis
+- **Engineering Agent** — automation, integrations, tooling
+- **Web Dashboard** — see everything at `http://localhost:{port}`
+- **Event-sourced state** — every action logged, auditable
+
+You are the CEO. You coordinate. The agents execute.
+
+## Getting Started
 
 ```bash
+# 1. Enable the plugin
 /plugin enable twi-jobworld
-```
 
-When you enable this plugin:
-1. CEO agent auto-spawns
-2. CEO has the `instantiate-jobworld` skill available
+# 2. Instantiate your company
+./skills/instantiate-jobworld/instantiate.sh "Your Company"
 
-## Creating a Company
-
-The bootstrap CEO runs:
-
-```bash
-./skills/instantiate-jobworld/instantiate.sh "Company Name" [port]
-```
-
-Example:
-```bash
-./skills/instantiate-jobworld/instantiate.sh "Acme Corp" 3850
-```
-
-This:
-- Copies template to `acme-corp-jobworld/`
-- Starts server at http://localhost:3850
-- Creates CLAUDE.md inside the company dir
-- CEO initializes departments and registers agents
-
-Then **you cd in** and CLAUDE.md auto-loads CEO prompts:
-
-```bash
-cd acme-corp-jobworld
+# 3. cd in and start running your company
+cd your-company-jobworld
 claude
 ```
 
-## Architecture
+The CEO agent guides you through initialization — creating departments, registering agents, setting up cadences.
+
+## How It Works
 
 ```
-Plugin (twi-jobworld-plugin/)
-├── agents/CEO.md            ← Bootstrap CEO, auto-spawned on enable
-├── settings.json             ← "agent": "CEO" auto-spawns CEO
-├── skills/
-│   ├── instantiate-jobworld/ ← Creates new companies
-│   └── jobworld-api/        ← API docs for agents
-└── template/
-    └── twi-jobworld-template/ ← Server + frontend template
+You (CEO)
+    ├── Content Lead → writes newsletter, schedules posts
+    ├── Growth Lead → builds audience, does outreach
+    ├── Revenue Lead → tracks monetization, manages tiers
+    ├── Research Agent → monitors industry, competitive intel
+    └── Engineering Agent → builds automations, integrates tools
 ```
 
-## After Instantiation
+All agents expose their work via a REST API. You delegate, review, coordinate.
 
-The created company dir contains:
+## Who This Is For
+
+- **Solopreneurs** who want a full team without hiring
+- **Builders** who want to run a company as a sidecar to their main work
+- **AI explorers** who want to see what agent orchestration looks like at company scale
+
+## What You Do
+
+As CEO:
+1. **Set direction** — what are we selling? Who's the audience?
+2. **Delegate** — agents handle execution
+3. **Review** — check the dashboard, review agent outputs
+4. **Coordinate** — break ties, resolve conflicts, approve major moves
+
+You don't write the newsletter. You don't do outreach. You don't build the automations. You make sure the right things get built and they work together.
+
+## The Stack
+
+Built on:
+- TWI Jobworld (company simulation engine)
+- Beehiiv API (newsletter automation)
+- Claude Code (agent coordination)
+
+## Example Companies
+
+- **Newsletter business** — Content + Growth + Revenue agents run the whole show
+- **Agency** — Research + Engineering agents deliver client work
+- **Product company** — All five agents operate like a real startup
+
+## Installation
+
+```bash
+/plugin install twi-jobworld@claude-code-marketplace
 ```
-acme-corp-jobworld/
-├── CLAUDE.md                 ← CEO prompts (auto-load when you cd in)
-├── index.html                ← Web dashboard
-├── start.sh                  ← Server startup script
-├── dist/                     ← Compiled server
-└── event-stream/
-    ├── data.json            ← Company state
-    └── events.jsonl         ← Event log
+
+Or for development:
+```bash
+/plugin enable /path/to/twi-jobworld
 ```
 
-## Agent Flow
+## Docs
 
-1. **Plugin Enable** → CEO (bootstrap) spawns
-2. **CEO runs instantiate-jobworld** → Creates company, generates CLAUDE.md with CEO prompts
-3. **You cd into company dir** → CLAUDE.md auto-loads CEO prompts
-4. **You (as CEO)** initialize depts, register agents
-5. **Agents** registered at `http://localhost:{port}/api/agents`
-6. **You** coordinate agents, they execute autonomously
+- [Understand Plugins](skills/understand-plugins/resources/overview.md) — how plugins work
+- [Understand Agents](skills/understand-agents/resources/overview.md) — how agents work
+- [Understand Hooks](skills/understand-hooks/resources/overview.md) — event-driven automation
+- [Understand MCPs](skills/understand-mcps/resources/overview.md) — connecting external services
 
 ## Futamura Projection
 
@@ -89,12 +100,3 @@ This plugin is P1 in the Futamura tower:
 - P1: **This plugin** interprets source → outputs new plugin instances
 - P2: understand-plugins (procedure that generates procedures)
 - P3: Meta-system that generates plugin-compilers
-
-## Stillpoint Media
-
-This plugin was built for Stillpoint Media's newsletter automation:
-- Content Lead: writes and schedules via Beehiiv
-- Growth Lead: subscriber acquisition
-- Revenue Lead: monetization tracking
-- Researcher: industry intelligence
-- SWE: automation and integrations
