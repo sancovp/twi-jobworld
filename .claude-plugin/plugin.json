@@ -1,0 +1,10 @@
+{
+  "name": "twi-jobworld",
+  "version": "1.0.0",
+  "description": "Instantiate a TWI Jobworld — AI-powered company with agents that run themselves. Enable this plugin and a CEO agent spawns, ready to bootstrap your company.",
+  "author": "Stillpoint Media",
+  "homepage": "https://github.com/stillpoint-ai/twi-jobworld",
+  "license": "MIT",
+  "categories": ["business", "automation", "agents"],
+  "keywords": ["jobworld", "ai-agents", "company", "bootstrap", "stillpoint"]
+}

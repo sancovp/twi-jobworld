@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Jobworld</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 40px; background: #1a1a2e; color: #eee; }
+    h1 { color: #00d4ff; }
+    .card { background: #16213e; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .metric { display: inline-block; background: #0f3460; padding: 15px 25px; border-radius: 8px; margin: 10px; text-align: center; }
+    .metric-value { font-size: 32px; font-weight: bold; color: #00d4ff; }
+    .metric-label { font-size: 14px; color: #888; }
+    .event { background: #0f3460; padding: 10px; margin: 5px 0; border-radius: 4px; font-family: monospace; font-size: 13px; }
+    .event-source { color: #00d4ff; }
+    .event-status { color: #ff6b6b; }
+    .dept { display: inline-block; background: #0f3460; padding: 15px; border-radius: 8px; margin: 10px; }
+    .refresh { background: #00d4ff; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    .refresh:hover { background: #00b8e6; }
+    .ralph-toggle { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+    .ralph-toggle label { font-size: 14px; }
+    .ralph-toggle input[type="checkbox"] { width: 20px; height: 20px; }
+    .ralph-field { margin: 10px 0; }
+    .ralph-field label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+    .ralph-field textarea { width: 100%; background: #0f3460; border: 1px solid #16213e; color: #eee; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 13px; resize: vertical; }
+    .ralph-field input[type="text"] { width: 100%; background: #0f3460; border: 1px solid #16213e; color: #eee; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+    .ralph-save { background: #4ecdc4; color: #000; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+    .ralph-save:hover { background: #3dbdb5; }
+    .ralph-status { font-size: 12px; padding: 4px 8px; border-radius: 4px; }
+    .ralph-status.active { background: #00d4ff; color: #000; }
+    .ralph-status.inactive { background: #333; color: #888; }
+    .day-card { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .day-info { font-size: 14px; color: #888; }
+    .close-day-btn { background: #ff6b6b; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+    .close-day-btn:hover { background: #ff5252; }
+  </style>
+</head>
+<body>
+  <h1>🤖 AI Jobworld</h1>
+
+  <button class="refresh" onclick="loadAll()">🔄 Refresh</button>
+
+  <div class="card">
+    <h2>📊 Metrics</h2>
+    <div id="metrics">
+      <div class="metric"><div class="metric-value" id="open">-</div><div class="metric-label">Open Tasks</div></div>
+      <div class="metric"><div class="metric-value" id="supposedly-done">-</div><div class="metric-label">Supposedly Done</div></div>
+      <div class="metric"><div class="metric-value" id="complete">-</div><div class="metric-label">Completed</div></div>
+      <div class="metric"><div class="metric-value" id="blocked">-</div><div class="metric-label">Blocked</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Projects</h2>
+    <div id="project-chart" style="font-family: monospace; line-height: 1.6;"></div>
+  </div>
+
+  <div class="card">
+    <h2>🏢 Organization</h2>
+    <div id="org-chart" style="font-family: monospace; line-height: 1.6;"></div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Open Tasks</h2>
+    <div id="tasks"></div>
+  </div>
+
+  <div class="card">
+    <h2>📜 Recent Events</h2>
+    <div id="events"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔄 Ralph Loop</h2>
+    <div id="ralph-status" class="ralph-status inactive">Checking...</div>
+    <div class="ralph-field">
+      <label>Prompt (constant)</label>
+      <textarea id="ralph-constant" rows="3" placeholder="The persistent prompt..."></textarea>
+    </div>
+    <div class="ralph-field">
+      <label>One-time instruction (next)</label>
+      <input type="text" id="ralph-next" placeholder="Injected once on next loop iteration...">
+    </div>
+    <div class="ralph-toggle">
+      <input type="checkbox" id="ralph-on">
+      <label for="ralph-on">Loop active</label>
+    </div>
+    <button class="ralph-save" onclick="saveRalphLoop()">Save</button>
+  </div>
+
+  <div class="card">
+    <h2>📅 Simulation Days</h2>
+    <div id="day-stats" class="day-card">
+      <div class="metric"><div class="metric-value" id="current-day">-</div><div class="metric-label">Current Day</div></div>
+      <div class="metric"><div class="metric-value" id="tasks-today">-</div><div class="metric-label">Tasks Created</div></div>
+      <div class="metric"><div class="metric-value" id="completed-today">-</div><div class="metric-label">Completed</div></div>
+      <div class="metric"><div class="metric-value" id="events-today">-</div><div class="metric-label">Events</div></div>
+      <div class="day-info" id="day-started"></div>
+    </div>
+    <button class="close-day-btn" onclick="closeDay()">Close Day & Start New</button>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3847/api';
+    const PROJECT_COLORS = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181', '#aa96da', '#fcbad3', '#a8d8ea'];
+
+    async function loadAll() {
+      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay()]);
+    }
+
+    async function loadProjectChart() {
+      try {
+        const data = await fetch(API + '/projects').then(r => r.json());
+        const isLast = (i, arr) => i === arr.length - 1;
+
+        let html = '<pre style="color: #00d4ff; line-height: 1.4; font-size: 13px;">';
+        let lines = [];
+
+        data.projects.forEach((proj, pi) => {
+          const projColor = PROJECT_COLORS[proj.colorIdx % PROJECT_COLORS.length];
+          const lastProj = isLast(pi, data.projects);
+          const projConn = lastProj ? '└── ' : '├── ';
+
+          lines.push({ text: projConn + '📋 PROJECT: ' + proj.name, depth: 1, color: projColor });
+
+          proj.milestones.forEach((ms, mi) => {
+            const lastMs = isLast(mi, proj.milestones);
+            const msPrefix = lastProj ? '    ' : '│   ';
+            const msConn = lastMs ? '└── ' : '├── ';
+            const msStatus = ms.status === 'true' ? '✅' : ms.status === 'false' ? '❌' : '⏳';
+
+            lines.push({ text: msPrefix + msConn + msStatus + ' MILESTONE: ' + ms.description + ' (by ' + ms.deadline + ')', depth: 2, color: projColor });
+
+            ms.goals.forEach((goal, gi) => {
+              const lastGoal = isLast(gi, ms.goals);
+              const goalPrefix = msPrefix + (lastMs ? '    ' : '│   ');
+              const goalConn = lastGoal ? '└── ' : '├── ';
+              const goalStatus = goal.status === 'met' ? '✅' : goal.status === 'not' ? '❌' : '⏳';
+
+              lines.push({ text: goalPrefix + goalConn + goalStatus + ' GOAL [' + goal.dept + ']: ' + goal.description, depth: 3, color: projColor });
+
+              goal.tasks.forEach((task, ti) => {
+                const lastTask = isLast(ti, goal.tasks);
+                const taskPrefix = goalPrefix + (lastGoal ? '    ' : '│   ');
+                const taskConn = lastTask ? '└── ' : '├── ';
+                const taskIcon = task.status === 'complete' ? '✅' : task.status === 'open' ? '⏳' : task.status === 'supposedly_done' ? '🤞' : '❌';
+                lines.push({ text: taskPrefix + taskConn + taskIcon + ' TASK: ' + task.description.substring(0, 40), depth: 4, color: projColor });
+              });
+            });
+          });
+        });
+
+        lines.forEach(line => {
+          html += '<span style="color: ' + line.color + '; display: inline-block; width: ' + (line.depth * 2 * 10) + 'px;"></span>' + line.text + '\n';
+        });
+        html += '</pre>';
+        document.getElementById('project-chart').innerHTML = html;
+      } catch (e) {
+        document.getElementById('project-chart').innerHTML = '<div class="dept">Error: ' + e.message + '</div>';
+      }
+    }
+
+    async function loadOrgChart() {
+      try {
+        const data = await fetch(API + '/org-chart').then(r => r.json());
+        const isLast = (i, arr) => i === arr.length - 1;
+
+        let html = '<pre style="color: #00d4ff; line-height: 1.4; font-size: 13px;">';
+        let lines = [];
+
+        if (data.company) {
+          lines.push({ text: '🏢 COMPANY: ' + data.company.name, depth: 0, color: '#00d4ff' });
+        }
+        if (data.ceo) {
+          lines.push({ text: '👤 CEO: ' + data.ceo.name, depth: 1, color: '#00d4ff' });
+        }
+
+        data.departments.forEach((dept, di) => {
+          const lastDept = isLast(di, data.departments);
+          const deptConn = lastDept ? '└── ' : '├── ';
+          const agents = dept.agents && dept.agents.length > 0 ? dept.agents.map(a => a.name).join(', ') : 'no agents';
+          lines.push({ text: deptConn + '🏢 DEPT: ' + dept.name + ' [' + agents + ']', depth: 1, color: '#00d4ff' });
+
+          (dept.goals || []).forEach((goal, gi) => {
+            const lastGoal = isLast(gi, dept.goals);
+            const goalPrefix = lastDept ? '    ' : '│   ';
+            const goalConn = lastGoal ? '└── ' : '├── ';
+            const goalColor = PROJECT_COLORS[(goal.colorIdx || 0) % PROJECT_COLORS.length];
+            const goalStatus = goal.status === 'met' ? '✅' : goal.status === 'not' ? '❌' : '⏳';
+            lines.push({ text: goalPrefix + goalConn + goalStatus + ' GOAL: ' + goal.description, depth: 2, color: goalColor });
+          });
+        });
+
+        lines.forEach(line => {
+          html += '<span style="color: ' + line.color + '; display: inline-block; width: ' + (line.depth * 2 * 10) + 'px;"></span>' + line.text + '\n';
+        });
+        html += '</pre>';
+        document.getElementById('org-chart').innerHTML = html;
+      } catch (e) {
+        document.getElementById('org-chart').innerHTML = '<div class="dept">Error: ' + e.message + '</div>';
+      }
+    }
+
+    async function loadMetrics() {
+      try {
+        const state = await fetch(API + '/state').then(r => r.json());
+        const tasks = Object.values(state.tasks || {});
+        document.getElementById('open').textContent = tasks.filter(t => t.status === 'open').length;
+        document.getElementById('supposedly-done').textContent = tasks.filter(t => t.status === 'supposedly_done').length;
+        document.getElementById('complete').textContent = tasks.filter(t => t.status === 'complete').length;
+        document.getElementById('blocked').textContent = tasks.filter(t => t.status === 'blocked').length;
+      } catch (e) {
+        console.error('Metrics error:', e);
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const tasks = await fetch(API + '/tasks/open').then(r => r.json());
+        let html = tasks.length ? '' : '<em>No open tasks</em>';
+        tasks.forEach(t => {
+          html += `<div class="event"><strong>${t.id}</strong>: ${t.description || 'No description'}</div>`;
+        });
+        document.getElementById('tasks').innerHTML = html;
+      } catch (e) {
+        document.getElementById('tasks').innerHTML = '<em>Error loading tasks</em>';
+      }
+    }
+
+    async function loadEvents() {
+      try {
+        const events = await fetch(API + '/events').then(r => r.json());
+        let html = '';
+        events.slice(-20).reverse().forEach(e => {
+          const obs = e.observation || {};
+          html += `<div class="event">
+            <span class="event-source">${e.source}</span>:
+            ${obs.desc || 'No description'}
+            <span class="event-status">[${obs.status || 'unknown'}]</span>
+          </div>`;
+        });
+        document.getElementById('events').innerHTML = html || '<em>No events</em>';
+      } catch (e) {
+        document.getElementById('events').innerHTML = '<em>Error loading events</em>';
+      }
+    }
+
+    async function loadRalphLoop() {
+      try {
+        const data = await fetch(API + '/ralph-loop').then(r => r.json());
+        const status = document.getElementById('ralph-status');
+        const on = document.getElementById('ralph-on');
+        const constant = document.getElementById('ralph-constant');
+        const next = document.getElementById('ralph-next');
+
+        if (data.exists) {
+          status.textContent = data.on ? 'ACTIVE' : 'INACTIVE';
+          status.className = 'ralph-status ' + (data.on ? 'active' : 'inactive');
+          on.checked = data.on;
+          constant.value = data.constant || '';
+          next.value = data.next || '';
+        } else {
+          status.textContent = 'NO SWITCH FILE';
+          status.className = 'ralph-status inactive';
+          on.checked = false;
+          constant.value = '';
+          next.value = '';
+        }
+      } catch (e) {
+        console.error('Ralph loop error:', e);
+      }
+    }
+
+    async function saveRalphLoop() {
+      const on = document.getElementById('ralph-on').checked;
+      const constant = document.getElementById('ralph-constant').value;
+      const next = document.getElementById('ralph-next').value;
+      try {
+        await fetch(API + '/ralph-loop', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ on, constant, next })
+        }).then(r => r.json());
+        loadRalphLoop();
+      } catch (e) {
+        console.error('Failed to save Ralph loop:', e);
+      }
+    }
+
+    async function loadDay() {
+      try {
+        const data = await fetch(API + '/day').then(r => r.json());
+        document.getElementById('current-day').textContent = data.day;
+        document.getElementById('tasks-today').textContent = data.tasks_created;
+        document.getElementById('completed-today').textContent = data.tasks_completed;
+        document.getElementById('events-today').textContent = data.events_today;
+        const started = new Date(data.started_at);
+        document.getElementById('day-started').textContent = 'Started: ' + started.toLocaleString();
+      } catch (e) {
+        console.error('Day stats error:', e);
+      }
+    }
+
+    async function closeDay() {
+      if (!confirm('Close this day? Tasks and events will count toward the next day.')) return;
+      try {
+        await fetch(API + '/close-day', { method: 'POST' }).then(r => r.json());
+        loadDay();
+        loadMetrics();
+        loadEvents();
+      } catch (e) {
+        console.error('Failed to close day:', e);
+      }
+    }
+
+    loadAll();
+    setInterval(loadAll, 5000);
+    loadRalphLoop();
+  </script>
+</body>
+</html>

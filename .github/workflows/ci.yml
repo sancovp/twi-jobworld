@@ -1,0 +1,146 @@
+name: Plugin CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate plugin.json
+        run: |
+          echo "Validating plugin.json..."
+          test -f .claude-plugin/plugin.json || exit 1
+          cat .claude-plugin/plugin.json | jq empty || exit 1
+          echo "✓ plugin.json valid"
+
+      - name: Validate settings.json
+        run: |
+          test -f settings.json || exit 1
+          cat settings.json | jq empty || exit 1
+          echo "✓ settings.json valid"
+
+      - name: Validate agent files
+        run: |
+          for agent in agents/*.md; do
+            [ -f "$agent" ] || continue
+            echo "Checking: $agent"
+            # Must have YAML frontmatter
+            head -n 1 "$agent" | grep -q "^---" || exit 1
+            # Must have name field
+            grep -q "^name:" "$agent" || exit 1
+            # Must have description field
+            grep -q "^description:" "$agent" || exit 1
+            # Must have model field
+            grep -q "^model:" "$agent" || exit 1
+            echo "  ✓ $agent valid"
+          done
+
+      - name: Validate skill files
+        run: |
+          for skill in skills/*/SKILL.md; do
+            [ -f "$skill" ] || continue
+            echo "Checking: $skill"
+            # Must have YAML frontmatter
+            head -n 1 "$skill" | grep -q "^---" || exit 1
+            # Must have name field
+            grep -q "^name:" "$skill" || exit 1
+            # Must have description field
+            grep -q "^description:" "$skill" || exit 1
+            echo "  ✓ $skill valid"
+          done
+
+      - name: Check for hardcoded secrets
+        run: |
+          # Check for common secret patterns (but not in node_modules)
+          if grep -r -i "api[_-]key\s*=\s*['\"][a-zA-Z0-9]" --include="*.md" --include="*.json" --include="*.sh" . --exclude-dir=node_modules --exclude-dir=template/twi-jobworld-template/dist/node_modules 2>/dev/null; then
+            echo "ERROR: Potential hardcoded API key found"
+            exit 1
+          fi
+          if grep -r "Bearer\s\+[a-zA-Z0-9]" --include="*.md" --include="*.json" --include="*.sh" . --exclude-dir=node_modules --exclude-dir=template/twi-jobworld-template/dist/node_modules 2>/dev/null; then
+            echo "ERROR: Potential Bearer token found"
+            exit 1
+          fi
+          echo "✓ No obvious hardcoded secrets"
+
+      - name: Check shell scripts syntax
+        run: |
+          for script in skills/*/instantiate.sh skills/*/*.sh; do
+            [ -f "$script" ] || continue
+            echo "Checking syntax: $script"
+            bash -n "$script" || exit 1
+            echo "  ✓ $script syntax valid"
+          done
+
+      - name: Check for TODOs in shipped code
+        run: |
+          if grep -r "TODO\|FIXME\|XXX" --include="*.md" --include="*.json" . --exclude-dir=node_modules --exclude-dir=template/twi-jobworld-template/dist/node_modules 2>/dev/null | grep -v "^./.git"; then
+            echo "WARNING: TODOs found in plugin files"
+          else
+            echo "✓ No TODOs in plugin files"
+          fi
+
+  test-instantiate:
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test instantiate script exists
+        run: |
+          test -f skills/instantiate-jobworld/instantiate.sh || exit 1
+          test -x skills/instantiate-jobworld/instantiate.sh || chmod +x skills/instantiate-jobworld/instantiate.sh
+          echo "✓ instantiate.sh exists and is executable"
+
+      - name: Test slugify function
+        run: |
+          source /dev/stdin << 'EOF'
+          slugify() {
+              echo "$1" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//'
+          }
+          EOF
+          result=$(slugify "My Company")
+          [ "$result" = "my-company" ] || exit 1
+          echo "✓ slugify works"
+
+  publish-check:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for marketplace.json
+        run: |
+          if [ -f marketplace.json ]; then
+            echo "✓ marketplace.json found"
+            cat marketplace.json | jq empty || exit 1
+          else
+            echo "ℹ No marketplace.json - manual publishing required"
+          fi
+
+      - name: Generate artifact
+        run: |
+          tar -czf twi-jobworld-plugin.tar.gz \
+            .claude-plugin/ \
+            agents/ \
+            skills/ \
+            settings.json \
+            README.md \
+            LICENSE \
+            2>/dev/null || true
+          if [ -f twi-jobworld-plugin.tar.gz ]; then
+            echo "✓ Plugin artifact created: twi-jobworld-plugin.tar.gz"
+            ls -la twi-jobworld-plugin.tar.gz
+          fi

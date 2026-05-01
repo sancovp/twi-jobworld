@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/node_modules/
+
+# Logs
+*.log
+server.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Local overrides
+*.local.md
+*.local.json
+
+# Compiled jobworlds (created at runtime)
+*-jobworld/
