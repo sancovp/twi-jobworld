@@ -7,13 +7,25 @@ Instantiate an AI-powered business that runs itself — content, growth, revenue
 ## What You Get
 
 A complete company with:
-- **Content Agent** — writes, schedules, publishes
-- **Growth Agent** — subscriber acquisition, outreach, social
-- **Revenue Agent** — monetization, tiers, tracking
-- **Research Agent** — industry intelligence, competitive analysis
-- **Engineering Agent** — automation, integrations, tooling
-- **Web Dashboard** — see everything at `http://localhost:{port}`
-- **Event-sourced state** — every action logged, auditable
+- **5 Agent Roles** — Content, Growth, Revenue, Research, Engineering
+- **Web Dashboard** — live view of everything at `http://localhost:{port}`
+- **Project Hierarchy** — Projects → Milestones → Goals → Tasks
+- **Org Chart** — company structure with agents and goals
+- **Event Log** — every action timestamped and logged
+- **Ralph Loop** — persistent prompt control with toggle
+- **Day Simulation** — track activity by day, close and start new days
+
+### Dashboard Sections
+
+| Section | What It Shows |
+|---------|---------------|
+| **Metrics** | Open, Supposedly Done, Completed, Blocked task counts |
+| **Projects** | Tree: Projects → Milestones → Goals → Tasks |
+| **Org Chart** | Company → CEO → Departments → Agents → Goals |
+| **Open Tasks** | Live list of pending tasks |
+| **Recent Events** | Audit log of all agent actions |
+| **Ralph Loop** | Persistent prompt control with toggle on/off |
+| **Simulation Days** | Current day, tasks created/completed, close day |
 
 You are the CEO. You coordinate. The agents execute.
 
