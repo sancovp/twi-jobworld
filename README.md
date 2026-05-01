@@ -37,7 +37,7 @@ The CEO agent guides you through initialization — creating departments, regist
 
 ```
 You (CEO)
-    ├── Content Lead → writes newsletter, schedules posts
+    ├── Content Lead → creates content, manages publishing
     ├── Growth Lead → builds audience, does outreach
     ├── Revenue Lead → tracks monetization, manages tiers
     ├── Research Agent → monitors industry, competitive intel
@@ -60,18 +60,17 @@ As CEO:
 3. **Review** — check the dashboard, review agent outputs
 4. **Coordinate** — break ties, resolve conflicts, approve major moves
 
-You don't write the newsletter. You don't do outreach. You don't build the automations. You make sure the right things get built and they work together.
+You don't write content. You don't do outreach. You don't build the automations. You make sure the right things get built and they work together.
 
 ## The Stack
 
 Built on:
 - TWI Jobworld (company simulation engine)
-- Beehiiv API (newsletter automation)
 - Claude Code (agent coordination)
 
 ## Example Companies
 
-- **Newsletter business** — Content + Growth + Revenue agents run the whole show
+- **Content business** — Content + Growth + Revenue agents run the whole show
 - **Agency** — Research + Engineering agents deliver client work
 - **Product company** — All five agents operate like a real startup
 
