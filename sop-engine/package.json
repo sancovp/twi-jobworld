@@ -1,0 +1,18 @@
+{
+  "name": "twi-sop-engine",
+  "version": "1.0.0",
+  "description": "SOP search, retrieval, and execution engine for TWI Jobworld. Uses SQLite FTS5 + BM25 for hybrid search over extruded SOP JSON configs.",
+  "main": "sop-engine.js",
+  "bin": {
+    "sop": "./cli.js"
+  },
+  "scripts": {
+    "init": "node cli.js init",
+    "index": "node cli.js index",
+    "search": "node cli.js search",
+    "list": "node cli.js list"
+  },
+  "dependencies": {
+    "sql.js": "^1.11.0"
+  }
+}

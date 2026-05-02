@@ -58,6 +58,8 @@ const store = {
     tasks: {},
     day: 1,
     day_started_at: new Date().toISOString(),
+    activeFlows: {},
+    sops: {},
 };
 function startServer(port) {
     return new Promise((resolve) => {
@@ -205,8 +207,14 @@ function startServer(port) {
             event.timestamp = new Date().toISOString();
             const eventPath = path.join(jobworldDir, 'event-stream', EVENT_FILE);
             fs.appendFileSync(eventPath, JSON.stringify(event) + '\n');
-            // Process observation to update goal/milestone status
-            processObservation(event);
+            // Check if this is an SOP flow event
+            const isSopEvent = handleSopEvent(event);
+            if (!isSopEvent) {
+                // Process observation to update goal/milestone status
+                processObservation(event);
+                // Record into any active flows
+                recordFlowEvent(event);
+            }
             broadcast({ type: 'event', data: event });
             res.json({ success: true });
         });
@@ -354,6 +362,8 @@ function loadData() {
         store.milestones = data.milestones || {};
         store.goals = data.goals || {};
         store.tasks = data.tasks || {};
+        store.activeFlows = data.activeFlows || {};
+        store.sops = data.sops || {};
     }
     catch (e) {
         console.error('[AI Jobworld] Failed to load data:', e);
@@ -524,6 +534,115 @@ function processObservation(event) {
         }
     }
     saveData();
+}
+// ============================================
+// SOP FLOW TRACKING
+// ============================================
+function handleSopEvent(event) {
+    const { observation } = event;
+    if (!observation || !observation.type) return false;
+    
+    if (observation.type === 'sop_start') {
+        const flowId = `flow-${Date.now()}`;
+        store.activeFlows[flowId] = {
+            id: flowId,
+            domain: observation.domain || 'General',
+            subdomain: observation.subdomain || 'Default',
+            process: observation.process || 'Unnamed Process',
+            tags: observation.tags || [],
+            input_kv: observation.kv || {},
+            started_at: event.timestamp,
+            started_by: event.source,
+            events: [],
+        };
+        saveData();
+        broadcast({ type: 'sop_flow_started', data: store.activeFlows[flowId] });
+        console.log(`[SOP] Flow started: ${observation.process} (${flowId})`);
+        return true;
+    }
+    
+    if (observation.type === 'sop_end') {
+        // Find the active flow by process name
+        const flowEntry = Object.entries(store.activeFlows).find(
+            ([_, f]) => f.process === observation.process
+        );
+        if (!flowEntry) {
+            console.log(`[SOP] No active flow found for process: ${observation.process}`);
+            return true;
+        }
+        const [flowId, flow] = flowEntry;
+        
+        // Extrude the SOP
+        const sopId = `sop-${Date.now()}`;
+        const slug = flow.process.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        
+        // Build input signature from CEO's start-event KV (keys = params, values = examples)
+        const inputSignature = {};
+        for (const [key, value] of Object.entries(flow.input_kv)) {
+            inputSignature[key] = {
+                type: typeof value,
+                example: value,
+                required: true,
+            };
+        }
+        
+        const sop = {
+            id: sopId,
+            slug,
+            name: flow.process,
+            version: 1,
+            domain: flow.domain,
+            subdomain: flow.subdomain,
+            tags: flow.tags,
+            created_at: flow.started_at,
+            completed_at: event.timestamp,
+            input_signature: inputSignature,
+            steps: flow.events.map((e, i) => ({
+                order: i + 1,
+                agent: e.source,
+                action: (e.observation && e.observation.desc) || 'Unknown action',
+                type: (e.observation && e.observation.type) || 'generic',
+                kv: (e.observation && e.observation.kv) || {},
+                status: (e.observation && e.observation.status) || 'unknown',
+            })),
+            goal: observation.goal || null,
+            run_count: 1,
+        };
+        
+        store.sops[sopId] = sop;
+        delete store.activeFlows[flowId];
+        saveData();
+        
+        // Also save as standalone JSON file
+        const jobworldDir = getJobworldDir();
+        if (jobworldDir) {
+            const sopDir = path.join(jobworldDir, 'sops', flow.domain, flow.subdomain);
+            if (!fs.existsSync(sopDir)) {
+                fs.mkdirSync(sopDir, { recursive: true });
+            }
+            fs.writeFileSync(
+                path.join(sopDir, `${slug}.json`),
+                JSON.stringify(sop, null, 2)
+            );
+        }
+        
+        broadcast({ type: 'sop_extruded', data: sop });
+        console.log(`[SOP] Extruded: ${sop.name} → ${sop.domain}/${sop.subdomain}/${slug}.json`);
+        return true;
+    }
+    
+    return false;
+}
+function recordFlowEvent(event) {
+    // Add event to any active flows that match the source agent's department
+    for (const flow of Object.values(store.activeFlows)) {
+        // Record all non-SOP events into active flows
+        flow.events.push({
+            source: event.source,
+            timestamp: event.timestamp,
+            observation: event.observation,
+        });
+    }
 }
 // CEO REVIEW: Mark task as complete or send back to open
 function ceoReviewTask(taskId, decision) {
@@ -722,5 +841,50 @@ function setupApiRoutes(app) {
         // Return top 3 highest priority (just return all for now, sorted by created_at)
         const topTasks = tasks.sort((a, b) => a.created_at.localeCompare(b.created_at)).slice(0, 3);
         res.json(topTasks);
+    });
+    // ============================================
+    // SOP ROUTES
+    // ============================================
+    // List all extruded SOPs
+    app.get('/api/sops', (_req, res) => {
+        res.json(Object.values(store.sops));
+    });
+    // Get single SOP
+    app.get('/api/sops/:id', (req, res) => {
+        const sop = store.sops[req.params.id];
+        if (!sop) return res.status(404).json({ error: 'SOP not found' });
+        res.json(sop);
+    });
+    // Update/edit SOP (the JSON is editable!)
+    app.put('/api/sops/:id', (req, res) => {
+        const sop = store.sops[req.params.id];
+        if (!sop) return res.status(404).json({ error: 'SOP not found' });
+        Object.assign(sop, req.body, { id: sop.id }); // preserve ID
+        store.sops[sop.id] = sop;
+        saveData();
+        res.json(sop);
+    });
+    // Delete SOP
+    app.delete('/api/sops/:id', (req, res) => {
+        if (!store.sops[req.params.id]) return res.status(404).json({ error: 'SOP not found' });
+        delete store.sops[req.params.id];
+        saveData();
+        res.json({ success: true });
+    });
+    // List active flows (in progress)
+    app.get('/api/flows', (_req, res) => {
+        res.json(Object.values(store.activeFlows));
+    });
+    // Search SOPs by keyword (simple until we add FTS5)
+    app.get('/api/sops/search/:query', (req, res) => {
+        const q = req.params.query.toLowerCase();
+        const matches = Object.values(store.sops).filter(sop => {
+            return sop.name.toLowerCase().includes(q)
+                || sop.domain.toLowerCase().includes(q)
+                || sop.subdomain.toLowerCase().includes(q)
+                || (sop.tags || []).some(t => t.toLowerCase().includes(q))
+                || sop.steps.some(s => s.action.toLowerCase().includes(q));
+        });
+        res.json(matches);
     });
 }
