@@ -1,0 +1,20 @@
+{
+  "id": "sop-001",
+  "slug": "infrastructure-audit",
+  "name": "Infrastructure Audit",
+  "version": 1,
+  "domain": "Engineering",
+  "subdomain": "DevOps",
+  "tags": ["infrastructure", "ci-cd", "security", "devops"],
+  "input_signature": {
+    "repo_url": { "type": "string", "example": "twi-jobworld", "required": true },
+    "target_env": { "type": "string", "example": "production", "required": true }
+  },
+  "steps": [
+    { "order": 1, "agent": "eng-agent", "action": "Configure CI/CD pipeline", "type": "devops_setup" },
+    { "order": 2, "agent": "eng-agent", "action": "Set up analytics dashboard", "type": "monitoring_setup" },
+    { "order": 3, "agent": "eng-agent", "action": "Configure DNS and SSL certificates", "type": "security_setup" }
+  ],
+  "run_count": 3,
+  "created_at": "2026-04-28T10:00:00Z"
+}

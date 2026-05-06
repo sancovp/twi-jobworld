@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Jobworld</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════════════
+       MERCURIAL CYBERGLASS — Design System v1
+       Deep-space glassmorphic dashboard theme
+       ══════════════════════════════════════════════ */
+
+    :root {
+      --void: #04040e;
+      --glass-bg: rgba(255,255,255,0.035);
+      --glass-border: rgba(255,255,255,0.07);
+      --glass-shine: rgba(255,255,255,0.05);
+      --blur: 20px;
+      --mercury-blue: #7dd3fc;
+      --mercury-violet: #a78bfa;
+      --mercury-chrome: #c0c0c0;
+      --mercury-teal: #5eead4;
+      --mercury-rose: #fda4af;
+      --text-1: #e2e8f0;
+      --text-2: #94a3b8;
+      --text-3: #64748b;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --err: #f87171;
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 16px;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+
+    /* ── Body + Space ── */
+    body {
+      font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+      margin: 0; padding: 32px 48px;
+      background: var(--void);
+      color: var(--text-1);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      animation: page-fade-in .8s ease-out;
+    }
+    @keyframes page-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Nebula */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+      background:
+        radial-gradient(ellipse 900px 700px at 15% 25%, rgba(167,139,250,0.07), transparent),
+        radial-gradient(ellipse 700px 500px at 85% 15%, rgba(125,211,252,0.05), transparent),
+        radial-gradient(ellipse 1000px 600px at 55% 85%, rgba(139,92,246,0.04), transparent),
+        radial-gradient(ellipse 500px 400px at 5% 95%, rgba(94,234,212,0.03), transparent),
+        radial-gradient(ellipse 600px 300px at 70% 50%, rgba(253,164,175,0.02), transparent);
+    }
+
+    /* Starfield */
+    body::after {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 15px 25px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 92px 58px, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1.5px 1.5px at 155px 82px, rgba(125,211,252,0.9), transparent),
+        radial-gradient(1px 1px at 48px 110px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 180px 35px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1.5px 1.5px at 70px 145px, rgba(167,139,250,0.7), transparent),
+        radial-gradient(1px 1px at 210px 115px, rgba(255,255,255,0.45), transparent),
+        radial-gradient(1px 1px at 35px 175px, rgba(255,255,255,0.6), transparent),
+        radial-gradient(2px 2px at 130px 10px, rgba(125,211,252,0.5), transparent),
+        radial-gradient(1px 1px at 250px 65px, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 110px 190px, rgba(255,255,255,0.55), transparent),
+        radial-gradient(1.5px 1.5px at 280px 140px, rgba(167,139,250,0.5), transparent),
+        radial-gradient(1px 1px at 60px 40px, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 145px 165px, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1.5px 1.5px at 230px 20px, rgba(94,234,212,0.6), transparent),
+        radial-gradient(1px 1px at 10px 130px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 270px 95px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 195px 200px, rgba(253,164,175,0.5), transparent),
+        radial-gradient(2px 2px at 50px 85px, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 300px 170px, rgba(255,255,255,0.55), transparent),
+        radial-gradient(1px 1px at 170px 50px, rgba(125,211,252,0.4), transparent),
+        radial-gradient(1px 1px at 120px 5px, rgba(255,255,255,0.65), transparent);
+      background-size: 320px 230px;
+      animation: star-drift 80s linear infinite;
+    }
+    @keyframes star-drift {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-220px); }
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-weight: 700; font-size: 2rem; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--mercury-blue), var(--mercury-violet), var(--mercury-chrome));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; color: transparent;
+      margin-bottom: 20px; padding-bottom: 4px;
+      animation: hue-breathe 6s ease-in-out infinite alternate;
+    }
+    @keyframes hue-breathe { to { filter: hue-rotate(15deg) brightness(1.1); } }
+
+    h2 {
+      font-weight: 600; font-size: 1.05rem; letter-spacing: 0.01em;
+      color: var(--text-1); margin-bottom: 12px;
+    }
+
+    /* ── Glass Cards ── */
+    .card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-lg);
+      padding: 20px 28px; margin: 20px 0;
+      box-shadow:
+        0 0 0 1px rgba(125,211,252,0.03),
+        0 8px 32px rgba(0,0,0,0.3),
+        inset 0 1px 0 var(--glass-shine);
+      transition: all .4s cubic-bezier(.4,0,.2,1);
+      position: relative; overflow: hidden;
+    }
+    /* Mercury shimmer top-edge */
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg,
+        transparent, rgba(125,211,252,0.25) 20%,
+        rgba(167,139,250,0.35) 50%,
+        rgba(192,192,192,0.25) 80%, transparent);
+      animation: shimmer 4s ease-in-out infinite alternate;
+    }
+    @keyframes shimmer {
+      0%   { opacity: .4; transform: translateX(-10%); }
+      100% { opacity: 1;  transform: translateX(10%);  }
+    }
+    .card:hover {
+      border-color: rgba(125,211,252,0.12);
+      box-shadow:
+        0 0 0 1px rgba(125,211,252,0.08),
+        0 0 40px rgba(125,211,252,0.06),
+        0 12px 40px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      transform: translateY(-1px);
+    }
+
+    /* ── Metrics ── */
+    .metric {
+      display: inline-block;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 16px 28px; border-radius: var(--r-md);
+      margin: 8px; text-align: center;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      transition: all .3s ease; min-width: 120px;
+    }
+    .metric:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(125,211,252,0.15);
+      box-shadow: 0 0 24px rgba(125,211,252,0.08);
+    }
+    .metric-value {
+      font-family: 'JetBrains Mono','SF Mono',monospace;
+      font-size: 2.25rem; font-weight: 700; line-height: 1.2;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; color: transparent;
+      animation: val-pulse 3s ease-in-out infinite alternate;
+    }
+    /* Per-metric accent colors: Open=blue, Supposedly=violet, Complete=teal, Blocked=rose */
+    .metric:nth-child(1) .metric-value { background: linear-gradient(135deg, var(--mercury-blue), #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .metric:nth-child(1) { border-color: rgba(125,211,252,0.12); }
+    .metric:nth-child(2) .metric-value { background: linear-gradient(135deg, var(--mercury-violet), #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .metric:nth-child(2) { border-color: rgba(167,139,250,0.12); }
+    .metric:nth-child(3) .metric-value { background: linear-gradient(135deg, var(--mercury-teal), var(--ok)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .metric:nth-child(3) { border-color: rgba(94,234,212,0.12); }
+    .metric:nth-child(4) .metric-value { background: linear-gradient(135deg, var(--mercury-rose), var(--err)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .metric:nth-child(4) { border-color: rgba(253,164,175,0.12); }
+    @keyframes val-pulse { to { filter: brightness(1.2); } }
+    .metric-label {
+      font-size: .7rem; font-weight: 500;
+      color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-top: 4px;
+    }
+
+    /* ── Events ── */
+    .event {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-left: 3px solid var(--text-3);
+      padding: 10px 16px; margin: 6px 0;
+      border-radius: var(--r-sm);
+      font-family: 'JetBrains Mono',monospace; font-size: .8rem;
+      line-height: 1.5; transition: all .2s ease;
+    }
+    .event:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(125,211,252,0.1);
+    }
+    /* Agent role accent borders */
+    .event[data-agent="eng-agent"]     { border-left-color: var(--mercury-blue); }
+    .event[data-agent="content-lead"]  { border-left-color: var(--mercury-teal); }
+    .event[data-agent="growth-lead"]   { border-left-color: var(--mercury-violet); }
+    .event[data-agent="revenue-lead"]  { border-left-color: var(--warn); }
+    .event[data-agent="research-agent"]{ border-left-color: var(--mercury-rose); }
+    .event-source { color: var(--mercury-blue); font-weight: 500; }
+    .event-status { color: var(--mercury-rose); opacity: .8; }
+
+    /* ── Dept badges ── */
+    .dept {
+      display: inline-block;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 12px 16px; border-radius: var(--r-sm); margin: 8px;
+      font-size: .85rem;
+    }
+
+    /* ── Org Chart Cards ── */
+    .org-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .org-header .org-company {
+      font-family: 'JetBrains Mono',monospace; font-size: .85rem;
+      color: var(--mercury-blue); font-weight: 600;
+    }
+    .org-header .org-ceo {
+      font-size: .75rem; color: var(--text-2);
+      padding: 3px 10px; border-radius: 12px;
+      background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.15);
+    }
+    .org-grid {
+      display: flex; flex-wrap: wrap; gap: 12px;
+    }
+    .org-dept-card {
+      flex: 1 1 200px; max-width: 280px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--r-md); padding: 14px 16px;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: all .3s ease;
+    }
+    .org-dept-card:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(125,211,252,0.12);
+      box-shadow: 0 0 20px rgba(125,211,252,0.06);
+      transform: translateY(-1px);
+    }
+    .org-dept-name {
+      font-weight: 600; font-size: .85rem; color: var(--text-1);
+      margin-bottom: 4px;
+    }
+    .org-dept-agents {
+      font-family: 'JetBrains Mono',monospace;
+      font-size: .7rem; color: var(--mercury-teal); margin-bottom: 8px;
+    }
+    .org-goal {
+      font-size: .75rem; color: var(--text-2);
+      padding: 3px 0; line-height: 1.4;
+    }
+
+    /* ── SOP Library Cards ── */
+    .sop-grid {
+      display: flex; flex-wrap: wrap; gap: 12px;
+    }
+    .sop-card {
+      flex: 1 1 260px; max-width: 320px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-top: 3px solid var(--mercury-violet);
+      border-radius: var(--r-md); padding: 14px 16px;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: all .3s ease;
+    }
+    .sop-card:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(167,139,250,0.15);
+      box-shadow: 0 0 24px rgba(167,139,250,0.08);
+      transform: translateY(-1px);
+    }
+    .sop-card-name {
+      font-weight: 600; font-size: .9rem; color: var(--text-1);
+      margin-bottom: 2px;
+    }
+    .sop-card-path {
+      font-family: 'JetBrains Mono',monospace;
+      font-size: .65rem; color: var(--mercury-violet); opacity: .8;
+      margin-bottom: 8px;
+    }
+    .sop-card-params {
+      margin-bottom: 8px;
+    }
+    .sop-param {
+      display: inline-block;
+      font-family: 'JetBrains Mono',monospace;
+      font-size: .65rem; color: var(--mercury-blue);
+      background: rgba(125,211,252,0.08);
+      border: 1px solid rgba(125,211,252,0.12);
+      padding: 2px 8px; border-radius: 10px; margin: 2px 3px 2px 0;
+    }
+    .sop-card-meta {
+      display: flex; justify-content: space-between;
+      font-size: .7rem; color: var(--text-3);
+    }
+    .sop-tag {
+      display: inline-block;
+      font-size: .6rem; color: var(--mercury-teal);
+      background: rgba(94,234,212,0.06);
+      border: 1px solid rgba(94,234,212,0.1);
+      padding: 1px 6px; border-radius: 8px; margin: 1px 2px;
+    }
+    .sop-empty {
+      color: var(--text-3); font-style: italic;
+      font-size: .85rem; padding: 16px 0;
+    }
+    .sop-active-banner {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(167,139,250,0.08);
+      border: 1px solid rgba(167,139,250,0.15);
+      border-radius: var(--r-sm); padding: 8px 14px;
+      margin-bottom: 12px; font-size: .8rem; color: var(--mercury-violet);
+      animation: pulse-border 2s ease-in-out infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(167,139,250,0.15); }
+      50% { border-color: rgba(167,139,250,0.35); }
+    }
+
+    /* ── Buttons ── */
+    .refresh {
+      background: linear-gradient(135deg, var(--mercury-blue), var(--mercury-violet));
+      color: #000; border: none;
+      padding: 10px 24px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: .9rem; font-weight: 600;
+      font-family: 'Inter',sans-serif;
+      letter-spacing: .01em;
+      box-shadow: 0 0 20px rgba(125,211,252,0.15);
+      transition: all .3s ease;
+      position: relative; overflow: hidden;
+    }
+    .refresh::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+      transform: translateX(-100%);
+      transition: transform .6s ease;
+    }
+    .refresh:hover {
+      box-shadow: 0 0 30px rgba(125,211,252,0.25);
+      transform: translateY(-1px);
+    }
+    .refresh:hover::after { transform: translateX(100%); }
+
+    /* ── Ralph Loop ── */
+    .ralph-toggle { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+    .ralph-toggle label { font-size: .85rem; color: var(--text-2); }
+    .ralph-toggle input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: var(--mercury-violet);
+      cursor: pointer;
+    }
+    .ralph-field { margin: 12px 0; }
+    .ralph-field label {
+      display: block; font-size: .7rem; font-weight: 500;
+      color: var(--text-3); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .ralph-field textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-1); padding: 10px 12px;
+      border-radius: var(--r-sm);
+      font-family: 'JetBrains Mono',monospace; font-size: .8rem;
+      resize: vertical; transition: border-color .2s ease;
+      outline: none;
+    }
+    .ralph-field textarea:focus {
+      border-color: rgba(167,139,250,0.3);
+      box-shadow: 0 0 0 3px rgba(167,139,250,0.08);
+    }
+    .ralph-field input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-1); padding: 10px 12px;
+      border-radius: var(--r-sm);
+      font-family: 'JetBrains Mono',monospace; font-size: .8rem;
+      transition: border-color .2s ease; outline: none;
+    }
+    .ralph-field input[type="text"]:focus {
+      border-color: rgba(167,139,250,0.3);
+      box-shadow: 0 0 0 3px rgba(167,139,250,0.08);
+    }
+    .ralph-save {
+      background: linear-gradient(135deg, var(--mercury-teal), var(--mercury-blue));
+      color: #000; border: none;
+      padding: 8px 20px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: .85rem; font-weight: 600;
+      font-family: 'Inter',sans-serif;
+      box-shadow: 0 0 16px rgba(94,234,212,0.12);
+      transition: all .3s ease;
+    }
+    .ralph-save:hover {
+      box-shadow: 0 0 24px rgba(94,234,212,0.2);
+      transform: translateY(-1px);
+    }
+    .ralph-status {
+      font-size: .7rem; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .ralph-status.active {
+      background: rgba(125,211,252,0.15);
+      color: var(--mercury-blue);
+      border: 1px solid rgba(125,211,252,0.2);
+      box-shadow: 0 0 12px rgba(125,211,252,0.1);
+    }
+    .ralph-status.inactive {
+      background: rgba(255,255,255,0.03);
+      color: var(--text-3);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* ── Day Simulation ── */
+    .day-card { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .day-info { font-size: .8rem; color: var(--text-3); font-family: 'JetBrains Mono',monospace; }
+    .close-day-btn {
+      background: linear-gradient(135deg, var(--err), #e11d48);
+      color: #fff; border: none;
+      padding: 10px 24px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: .85rem; font-weight: 600;
+      font-family: 'Inter',sans-serif;
+      box-shadow: 0 0 16px rgba(248,113,113,0.12);
+      transition: all .3s ease;
+    }
+    .close-day-btn:hover {
+      box-shadow: 0 0 24px rgba(248,113,113,0.2);
+      transform: translateY(-1px);
+    }
+
+    /* ── API status pills ── */
+    .api-offline {
+      background: rgba(248,113,113,0.15) !important;
+      color: var(--err) !important;
+      border: 1px solid rgba(248,113,113,0.2) !important;
+    }
+    .api-online {
+      background: rgba(74,222,128,0.15) !important;
+      color: var(--ok) !important;
+      border: 1px solid rgba(74,222,128,0.2) !important;
+    }
+
+    /* ── Tree views (pre blocks) ── */
+    pre {
+      font-family: 'JetBrains Mono','SF Mono',monospace !important;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+    /* ── Selection ── */
+    ::selection { background: rgba(167,139,250,0.3); color: #fff; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      body { padding: 16px 20px; }
+      h1 { font-size: 1.5rem; }
+      .metric { min-width: 90px; padding: 12px 16px; }
+      .metric-value { font-size: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 AI Jobworld</h1>
+
+  <button class="refresh" onclick="loadAll()">🔄 Refresh</button>
+  <span id="api-status" style="font-size:.7rem;font-weight:600;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,0.03);color:#64748b;margin-left:12px;text-transform:uppercase;letter-spacing:.06em;border:1px solid rgba(255,255,255,0.05);font-family:Inter,sans-serif;">Checking API...</span>
+
+  <div class="card">
+    <h2>📊 Metrics</h2>
+    <div id="metrics">
+      <div class="metric"><div class="metric-value" id="open">-</div><div class="metric-label">Open Tasks</div></div>
+      <div class="metric"><div class="metric-value" id="supposedly-done">-</div><div class="metric-label">Supposedly Done</div></div>
+      <div class="metric"><div class="metric-value" id="complete">-</div><div class="metric-label">Completed</div></div>
+      <div class="metric"><div class="metric-value" id="blocked">-</div><div class="metric-label">Blocked</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Projects</h2>
+    <div id="project-chart" style="font-family: monospace; line-height: 1.6;"></div>
+  </div>
+
+  <div class="card">
+    <h2>🏢 Organization</h2>
+    <div id="org-chart" style="font-family: monospace; line-height: 1.6;"></div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Open Tasks</h2>
+    <div id="tasks"></div>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ SOP Library</h2>
+    <div id="active-flows"></div>
+    <div id="sop-library"></div>
+  </div>
+
+  <div class="card">
+    <h2>📜 Recent Events</h2>
+    <div id="events"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔄 Ralph Loop</h2>
+    <div id="ralph-status" class="ralph-status inactive">Checking...</div>
+    <div class="ralph-field">
+      <label>Prompt (constant)</label>
+      <textarea id="ralph-constant" rows="3" placeholder="The persistent prompt..."></textarea>
+    </div>
+    <div class="ralph-field">
+      <label>One-time instruction (next)</label>
+      <input type="text" id="ralph-next" placeholder="Injected once on next loop iteration...">
+    </div>
+    <div class="ralph-toggle">
+      <input type="checkbox" id="ralph-on">
+      <label for="ralph-on">Loop active</label>
+    </div>
+    <button class="ralph-save" onclick="saveRalphLoop()">Save</button>
+  </div>
+
+  <div class="card">
+    <h2>📅 Simulation Days</h2>
+    <div id="day-stats" class="day-card">
+      <div class="metric"><div class="metric-value" id="current-day">-</div><div class="metric-label">Current Day</div></div>
+      <div class="metric"><div class="metric-value" id="tasks-today">-</div><div class="metric-label">Tasks Created</div></div>
+      <div class="metric"><div class="metric-value" id="completed-today">-</div><div class="metric-label">Completed</div></div>
+      <div class="metric"><div class="metric-value" id="events-today">-</div><div class="metric-label">Events</div></div>
+      <div class="day-info" id="day-started"></div>
+    </div>
+    <button class="close-day-btn" onclick="closeDay()">Close Day & Start New</button>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3847/api';
+    const WS_URL = 'ws://localhost:3847';
+    const PROJECT_COLORS = ['#f87171', '#5eead4', '#fbbf24', '#7dd3fc', '#fb923c', '#c084fc', '#fda4af', '#38bdf8'];
+    let ws = null;
+    let wsReconnectTimer = null;
+    let useMock = false;
+
+    const MOCK = {
+      state: {
+        tasks: {
+          't1': { status: 'open', description: 'Write launch blog post' },
+          't2': { status: 'open', description: 'Design social media templates' },
+          't3': { status: 'supposedly_done', description: 'Set up email automation flow' },
+          't4': { status: 'supposedly_done', description: 'Draft investor pitch deck v2' },
+          't5': { status: 'complete', description: 'Configure CI/CD pipeline' },
+          't6': { status: 'complete', description: 'Build landing page prototype' },
+          't7': { status: 'complete', description: 'Create brand style guide' },
+          't8': { status: 'blocked', description: 'Integrate payment gateway (awaiting API keys)' },
+          't9': { status: 'open', description: 'Analyze competitor pricing models' },
+          't10': { status: 'complete', description: 'Set up analytics dashboard' },
+          't11': { status: 'open', description: 'Write API documentation' },
+          't12': { status: 'complete', description: 'Configure DNS and SSL certificates' },
+        }
+      },
+      projects: { projects: [
+        { name: 'Product Launch v1.0', colorIdx: 0, milestones: [
+          { description: 'MVP Feature Complete', deadline: '2026-05-15', status: 'true', goals: [
+            { description: 'Core auth flow working', status: 'met', dept: 'Engineering', tasks: [
+              { description: 'Implement OAuth2 login', status: 'complete' },
+              { description: 'Add session management', status: 'complete' },
+            ]},
+            { description: 'Landing page live', status: 'met', dept: 'Content', tasks: [
+              { description: 'Build landing page prototype', status: 'complete' },
+              { description: 'Create brand style guide', status: 'complete' },
+            ]},
+          ]},
+          { description: 'Public Beta Launch', deadline: '2026-06-01', status: 'pending', goals: [
+            { description: 'Payment integration', status: 'not', dept: 'Engineering', tasks: [
+              { description: 'Integrate payment gateway', status: 'blocked' },
+              { description: 'Write API documentation', status: 'open' },
+            ]},
+            { description: 'Marketing push ready', status: 'pending', dept: 'Growth', tasks: [
+              { description: 'Write launch blog post', status: 'open' },
+              { description: 'Design social media templates', status: 'open' },
+            ]},
+          ]},
+        ]},
+        { name: 'Content Engine', colorIdx: 1, milestones: [
+          { description: 'Weekly Newsletter Pipeline', deadline: '2026-05-10', status: 'pending', goals: [
+            { description: 'Email automation live', status: 'pending', dept: 'Content', tasks: [
+              { description: 'Set up email automation flow', status: 'supposedly_done' },
+            ]},
+            { description: 'Competitor intel baseline', status: 'pending', dept: 'Research', tasks: [
+              { description: 'Analyze competitor pricing models', status: 'open' },
+            ]},
+          ]},
+        ]},
+        { name: 'Revenue Operations', colorIdx: 3, milestones: [
+          { description: 'Series A Readiness', deadline: '2026-07-01', status: 'pending', goals: [
+            { description: 'Pitch materials complete', status: 'pending', dept: 'Revenue', tasks: [
+              { description: 'Draft investor pitch deck v2', status: 'supposedly_done' },
+            ]},
+            { description: 'Infrastructure audit done', status: 'met', dept: 'Engineering', tasks: [
+              { description: 'Configure CI/CD pipeline', status: 'complete' },
+              { description: 'Set up analytics dashboard', status: 'complete' },
+              { description: 'Configure DNS and SSL certificates', status: 'complete' },
+            ]},
+          ]},
+        ]},
+      ]},
+      orgChart: {
+        company: { name: 'NovaStar AI' },
+        ceo: { name: 'You' },
+        departments: [
+          { name: 'Content', agents: [{ name: 'content-lead' }], goals: [
+            { description: 'Landing page live', status: 'met', colorIdx: 0 },
+            { description: 'Email automation live', status: 'pending', colorIdx: 1 },
+          ]},
+          { name: 'Growth', agents: [{ name: 'growth-lead' }], goals: [
+            { description: 'Marketing push ready', status: 'pending', colorIdx: 0 },
+          ]},
+          { name: 'Revenue', agents: [{ name: 'revenue-lead' }], goals: [
+            { description: 'Pitch materials complete', status: 'pending', colorIdx: 3 },
+          ]},
+          { name: 'Research', agents: [{ name: 'research-agent' }], goals: [
+            { description: 'Competitor intel baseline', status: 'pending', colorIdx: 1 },
+          ]},
+          { name: 'Engineering', agents: [{ name: 'eng-agent' }], goals: [
+            { description: 'Core auth flow working', status: 'met', colorIdx: 0 },
+            { description: 'Payment integration', status: 'not', colorIdx: 0 },
+            { description: 'Infrastructure audit done', status: 'met', colorIdx: 3 },
+          ]},
+        ]
+      },
+      openTasks: [
+        { id: 'task-1001', description: 'Write launch blog post' },
+        { id: 'task-1002', description: 'Design social media templates' },
+        { id: 'task-1003', description: 'Analyze competitor pricing models' },
+        { id: 'task-1004', description: 'Write API documentation' },
+      ],
+      events: [
+        { source: 'eng-agent', timestamp: '2026-05-01T14:30:00Z', observation: { desc: 'Configured CI/CD pipeline with GitHub Actions', status: 'completed' }},
+        { source: 'content-lead', timestamp: '2026-05-01T13:15:00Z', observation: { desc: 'Brand style guide finalized and uploaded', status: 'completed' }},
+        { source: 'eng-agent', timestamp: '2026-05-01T12:00:00Z', observation: { desc: 'Payment gateway blocked — waiting on Stripe API keys from CEO', status: 'blocked' }},
+        { source: 'revenue-lead', timestamp: '2026-05-01T11:45:00Z', observation: { desc: 'Investor pitch deck v2 draft submitted for review', status: 'completed' }},
+        { source: 'content-lead', timestamp: '2026-05-01T10:30:00Z', observation: { desc: 'Email automation flow configured in Mailchimp', status: 'completed' }},
+        { source: 'research-agent', timestamp: '2026-05-01T09:00:00Z', observation: { desc: 'Started competitive analysis on 5 key competitors', status: 'in_progress' }},
+        { source: 'growth-lead', timestamp: '2026-04-30T16:00:00Z', observation: { desc: 'Identified 3 influencer partnership opportunities', status: 'completed' }},
+        { source: 'eng-agent', timestamp: '2026-04-30T14:00:00Z', observation: { desc: 'SSL certificates configured and verified', status: 'completed' }},
+      ],
+      ralph: { on: true, constant: 'You are the CEO of NovaStar AI. Check on each department, review supposedly_done tasks, and coordinate the team toward the Public Beta Launch milestone.', next: 'Focus on unblocking the payment gateway integration — get Stripe API keys sorted.', exists: true },
+      day: { day: 3, started_at: '2026-05-01T09:00:00Z', tasks_created: 4, tasks_completed: 5, events_today: 6 },
+      sops: [
+        {
+          id: 'sop-001', slug: 'infrastructure-audit', name: 'Infrastructure Audit', version: 1,
+          domain: 'Engineering', subdomain: 'DevOps',
+          tags: ['infrastructure', 'ci-cd', 'security', 'devops'],
+          input_signature: {
+            repo_url: { type: 'string', example: 'twi-jobworld', required: true },
+            target_env: { type: 'string', example: 'production', required: true },
+          },
+          steps: [
+            { order: 1, agent: 'eng-agent', action: 'Configure CI/CD pipeline', type: 'devops_setup' },
+            { order: 2, agent: 'eng-agent', action: 'Set up analytics dashboard', type: 'monitoring_setup' },
+            { order: 3, agent: 'eng-agent', action: 'Configure DNS and SSL certificates', type: 'security_setup' },
+          ],
+          run_count: 3, created_at: '2026-04-28T10:00:00Z',
+        },
+        {
+          id: 'sop-002', slug: 'content-publishing-pipeline', name: 'Content Publishing Pipeline', version: 2,
+          domain: 'Content', subdomain: 'Publishing',
+          tags: ['content', 'email', 'newsletter', 'automation'],
+          input_signature: {
+            topic: { type: 'string', example: 'AI agents weekly digest', required: true },
+            audience_segment: { type: 'string', example: 'technical-founders', required: true },
+            publish_date: { type: 'string', example: '2026-05-10', required: false },
+          },
+          steps: [
+            { order: 1, agent: 'content-lead', action: 'Draft newsletter content', type: 'content_creation' },
+            { order: 2, agent: 'content-lead', action: 'Configure email automation flow', type: 'automation_setup' },
+            { order: 3, agent: 'growth-lead', action: 'Set up audience targeting', type: 'audience_config' },
+          ],
+          run_count: 5, created_at: '2026-04-25T14:00:00Z',
+        },
+        {
+          id: 'sop-003', slug: 'investor-pitch-prep', name: 'Investor Pitch Prep', version: 1,
+          domain: 'Revenue', subdomain: 'Fundraising',
+          tags: ['investor', 'pitch', 'series-a', 'fundraising'],
+          input_signature: {
+            round_name: { type: 'string', example: 'Series A', required: true },
+            target_raise: { type: 'string', example: '$2M', required: true },
+            lead_investor: { type: 'string', example: 'TBD', required: false },
+          },
+          steps: [
+            { order: 1, agent: 'revenue-lead', action: 'Draft investor pitch deck', type: 'document_creation' },
+            { order: 2, agent: 'research-agent', action: 'Competitive analysis for pitch', type: 'market_research' },
+            { order: 3, agent: 'eng-agent', action: 'Technical architecture one-pager', type: 'technical_doc' },
+          ],
+          run_count: 1, created_at: '2026-05-01T11:00:00Z',
+        },
+      ],
+      flows: [
+        {
+          id: 'flow-active-001', process: 'Marketing Push', domain: 'Growth', subdomain: 'Campaigns',
+          started_at: '2026-05-01T16:00:00Z', started_by: 'ceo',
+          events: [
+            { source: 'growth-lead', timestamp: '2026-05-01T16:15:00Z', observation: { desc: 'Identified 3 influencer partnership opportunities', status: 'completed' }},
+          ],
+        },
+      ],
+    };
+
+    async function mockFetch(url) {
+      if (url.includes('/state')) return MOCK.state;
+      if (url.includes('/projects')) return MOCK.projects;
+      if (url.includes('/org-chart')) return MOCK.orgChart;
+      if (url.includes('/tasks/open')) return MOCK.openTasks;
+      if (url.includes('/events')) return MOCK.events;
+      if (url.includes('/ralph-loop')) return MOCK.ralph;
+      if (url.includes('/day')) return MOCK.day;
+      if (url.includes('/sops')) return MOCK.sops;
+      if (url.includes('/flows')) return MOCK.flows;
+      return {};
+    }
+
+    async function apiFetch(url) {
+      if (useMock) return mockFetch(url);
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        setApiStatus(true);
+        return r.json();
+      } catch (e) {
+        useMock = true;
+        setApiStatus(false);
+        return mockFetch(url);
+      }
+    }
+
+    function setApiStatus(online) {
+      const el = document.getElementById('api-status');
+      if (!el) return;
+      el.textContent = online ? 'API Online' : 'API Offline';
+      el.className = online ? 'api-online' : 'api-offline';
+    }
+
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+          setApiStatus(true);
+          clearTimeout(wsReconnectTimer);
+        };
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'event' || msg.type === 'round_start') {
+              loadAll();
+            }
+          } catch (e) {}
+        };
+        ws.onclose = () => {
+          setApiStatus(false);
+          useMock = true;
+          loadAll();
+          wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+        };
+        ws.onerror = () => {
+          setApiStatus(false);
+          useMock = true;
+        };
+      } catch (e) {
+        setApiStatus(false);
+        wsReconnectTimer = setTimeout(connectWebSocket, 5000);
+      }
+    }
+
+    async function loadAll() {
+      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop(), loadSOPs()]);
+    }
+
+    async function loadProjectChart() {
+      try {
+        const data = await apiFetch(API + '/projects');
+        const isLast = (i, arr) => i === arr.length - 1;
+
+        let html = '<pre style="color: #7dd3fc; line-height: 1.5; font-size: 13px;">';
+        let lines = [];
+
+        data.projects.forEach((proj, pi) => {
+          const projColor = PROJECT_COLORS[proj.colorIdx % PROJECT_COLORS.length];
+          const lastProj = isLast(pi, data.projects);
+          const projConn = lastProj ? '└── ' : '├── ';
+
+          lines.push({ text: projConn + '📋 PROJECT: ' + proj.name, depth: 1, color: projColor });
+
+          proj.milestones.forEach((ms, mi) => {
+            const lastMs = isLast(mi, proj.milestones);
+            const msPrefix = lastProj ? '    ' : '│   ';
+            const msConn = lastMs ? '└── ' : '├── ';
+            const msStatus = ms.status === 'true' ? '✅' : ms.status === 'false' ? '❌' : '⏳';
+
+            lines.push({ text: msPrefix + msConn + msStatus + ' MILESTONE: ' + ms.description + ' (by ' + ms.deadline + ')', depth: 2, color: projColor });
+
+            ms.goals.forEach((goal, gi) => {
+              const lastGoal = isLast(gi, ms.goals);
+              const goalPrefix = msPrefix + (lastMs ? '    ' : '│   ');
+              const goalConn = lastGoal ? '└── ' : '├── ';
+              const goalStatus = goal.status === 'met' ? '✅' : goal.status === 'not' ? '❌' : '⏳';
+
+              lines.push({ text: goalPrefix + goalConn + goalStatus + ' GOAL [' + goal.dept + ']: ' + goal.description, depth: 3, color: projColor });
+
+              goal.tasks.forEach((task, ti) => {
+                const lastTask = isLast(ti, goal.tasks);
+                const taskPrefix = goalPrefix + (lastGoal ? '    ' : '│   ');
+                const taskConn = lastTask ? '└── ' : '├── ';
+                const taskIcon = task.status === 'complete' ? '✅' : task.status === 'open' ? '⏳' : task.status === 'supposedly_done' ? '🤞' : '❌';
+                lines.push({ text: taskPrefix + taskConn + taskIcon + ' TASK: ' + task.description.substring(0, 40), depth: 4, color: projColor });
+              });
+            });
+          });
+        });
+
+        lines.forEach(line => {
+          html += '<span style="color: ' + line.color + '; display: inline-block; width: ' + (line.depth * 2 * 10) + 'px;"></span>' + line.text + '\n';
+        });
+        html += '</pre>';
+        document.getElementById('project-chart').innerHTML = html;
+      } catch (e) {
+        document.getElementById('project-chart').innerHTML = '<div class="dept">Error: ' + e.message + '</div>';
+      }
+    }
+
+    async function loadOrgChart() {
+      try {
+        const data = await apiFetch(API + '/org-chart');
+        let html = '';
+
+        // Header: Company + CEO
+        html += '<div class="org-header">';
+        if (data.company) html += '<span class="org-company">🏢 ' + data.company.name + '</span>';
+        if (data.ceo) html += '<span class="org-ceo">👤 CEO: ' + data.ceo.name + '</span>';
+        html += '</div>';
+
+        // Department cards grid
+        html += '<div class="org-grid">';
+        data.departments.forEach((dept) => {
+          const agents = dept.agents && dept.agents.length > 0 ? dept.agents.map(a => a.name).join(', ') : 'unassigned';
+          html += '<div class="org-dept-card">';
+          html += '<div class="org-dept-name">🏢 ' + dept.name + '</div>';
+          html += '<div class="org-dept-agents">' + agents + '</div>';
+          (dept.goals || []).forEach((goal) => {
+            const goalColor = PROJECT_COLORS[(goal.colorIdx || 0) % PROJECT_COLORS.length];
+            const goalStatus = goal.status === 'met' ? '✅' : goal.status === 'not' ? '❌' : '⏳';
+            html += '<div class="org-goal" style="border-left:2px solid ' + goalColor + ';padding-left:8px;margin:4px 0;">' + goalStatus + ' ' + goal.description + '</div>';
+          });
+          html += '</div>';
+        });
+        html += '</div>';
+
+        document.getElementById('org-chart').innerHTML = html;
+      } catch (e) {
+        document.getElementById('org-chart').innerHTML = '<div class="dept">Error: ' + e.message + '</div>';
+      }
+    }
+
+    async function loadMetrics() {
+      try {
+        const state = await apiFetch(API + '/state');
+        const tasks = Object.values(state.tasks || {});
+        document.getElementById('open').textContent = tasks.filter(t => t.status === 'open').length;
+        document.getElementById('supposedly-done').textContent = tasks.filter(t => t.status === 'supposedly_done').length;
+        document.getElementById('complete').textContent = tasks.filter(t => t.status === 'complete').length;
+        document.getElementById('blocked').textContent = tasks.filter(t => t.status === 'blocked').length;
+      } catch (e) {
+        console.error('Metrics error:', e);
+        setApiStatus(false);
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const tasks = await apiFetch(API + '/tasks/open');
+        let html = tasks.length ? '' : '<em>No open tasks</em>';
+        tasks.forEach(t => {
+          html += `<div class="event"><strong>${t.id}</strong>: ${t.description || 'No description'}</div>`;
+        });
+        document.getElementById('tasks').innerHTML = html;
+      } catch (e) {
+        document.getElementById('tasks').innerHTML = '<em>Error loading tasks</em>';
+      }
+    }
+
+    async function loadEvents() {
+      try {
+        const events = await apiFetch(API + '/events');
+        let html = '';
+        events.slice(-20).reverse().forEach(e => {
+          const obs = e.observation || {};
+          html += `<div class="event" data-agent="${e.source}">
+            <span class="event-source">${e.source}</span>:
+            ${obs.desc || 'No description'}
+            <span class="event-status">[${obs.status || 'unknown'}]</span>
+          </div>`;
+        });
+        document.getElementById('events').innerHTML = html || '<em>No events</em>';
+      } catch (e) {
+        document.getElementById('events').innerHTML = '<em>Error loading events</em>';
+      }
+    }
+
+    async function loadRalphLoop() {
+      try {
+        const data = await apiFetch(API + '/ralph-loop');
+        const status = document.getElementById('ralph-status');
+        const on = document.getElementById('ralph-on');
+        const constant = document.getElementById('ralph-constant');
+        const next = document.getElementById('ralph-next');
+
+        if (data.exists) {
+          status.textContent = data.on ? 'ACTIVE' : 'INACTIVE';
+          status.className = 'ralph-status ' + (data.on ? 'active' : 'inactive');
+          on.checked = data.on;
+          constant.value = data.constant || '';
+          next.value = data.next || '';
+        } else {
+          status.textContent = 'NO SWITCH FILE';
+          status.className = 'ralph-status inactive';
+          on.checked = false;
+          constant.value = '';
+          next.value = '';
+        }
+      } catch (e) {
+        console.error('Ralph loop error:', e);
+      }
+    }
+
+    async function saveRalphLoop() {
+      const on = document.getElementById('ralph-on').checked;
+      const constant = document.getElementById('ralph-constant').value;
+      const next = document.getElementById('ralph-next').value;
+      try {
+        await fetch(API + '/ralph-loop', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ on, constant, next })
+        }).then(r => r.json());
+        loadRalphLoop();
+      } catch (e) {
+        console.error('Failed to save Ralph loop:', e);
+      }
+    }
+
+    async function loadDay() {
+      try {
+        const data = await apiFetch(API + '/day');
+        document.getElementById('current-day').textContent = data.day;
+        document.getElementById('tasks-today').textContent = data.tasks_created;
+        document.getElementById('completed-today').textContent = data.tasks_completed;
+        document.getElementById('events-today').textContent = data.events_today;
+        const started = new Date(data.started_at);
+        document.getElementById('day-started').textContent = 'Started: ' + started.toLocaleString();
+      } catch (e) {
+        console.error('Day stats error:', e);
+      }
+    }
+
+    async function closeDay() {
+      if (!confirm('Close this day? Tasks and events will count toward the next day.')) return;
+      try {
+        await fetch(API + '/close-day', { method: 'POST' }).then(r => r.json());
+        loadDay();
+        loadMetrics();
+        loadEvents();
+      } catch (e) {
+        console.error('Failed to close day:', e);
+      }
+    }
+
+    async function loadSOPs() {
+      try {
+        const [sops, flows] = await Promise.all([
+          apiFetch(API + '/sops'),
+          apiFetch(API + '/flows'),
+        ]);
+
+        let html = '';
+
+        // Active flows banner
+        if (flows.length > 0) {
+          flows.forEach(f => {
+            html += `<div class="sop-active-banner">
+              <span>⚡ Active Flow:</span>
+              <strong>${f.process}</strong>
+              <span style="color:var(--text-3)">${f.domain} › ${f.subdomain}</span>
+              <span style="color:var(--text-3)">(${f.events.length} events captured)</span>
+            </div>`;
+          });
+          document.getElementById('active-flows').innerHTML = html;
+          html = '';
+        } else {
+          document.getElementById('active-flows').innerHTML = '';
+        }
+
+        // SOP cards grid
+        if (sops.length === 0) {
+          html = '<div class="sop-empty">No SOPs extruded yet. Start a flow to create one.</div>';
+        } else {
+          html += '<div class="sop-grid">';
+          sops.forEach(sop => {
+            const params = Object.keys(sop.input_signature || {});
+            const tags = sop.tags || [];
+            html += `<div class="sop-card">
+              <div class="sop-card-name">${sop.name}</div>
+              <div class="sop-card-path">${sop.domain} › ${sop.subdomain}</div>
+              <div class="sop-card-params">
+                ${params.map(p => `<span class="sop-param">${p}</span>`).join('')}
+              </div>
+              <div style="margin-bottom:6px">
+                ${tags.map(t => `<span class="sop-tag">${t}</span>`).join('')}
+              </div>
+              <div class="sop-card-meta">
+                <span>${sop.steps.length} steps · v${sop.version}</span>
+                <span>×${sop.run_count} runs</span>
+              </div>
+            </div>`;
+          });
+          html += '</div>';
+        }
+
+        document.getElementById('sop-library').innerHTML = html;
+      } catch (e) {
+        document.getElementById('sop-library').innerHTML = '<div class="sop-empty">Error loading SOPs</div>';
+      }
+    }
+
+    loadAll();
+    setInterval(loadAll, 5000);
+    loadRalphLoop();
+    connectWebSocket();
+  </script>
+</body>
+</html>

@@ -24,3 +24,6 @@ Thumbs.db
 
 # Compiled jobworlds (created at runtime)
 *-jobworld/
+
+# Exception: instantiate-jobworld skill (not a compiled jobworld)
+!skills/instantiate-jobworld/
