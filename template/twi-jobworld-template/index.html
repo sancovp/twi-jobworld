@@ -652,7 +652,8 @@
       <div id="ceo-response" onclick="showCeoModal()" style="flex:1;padding:12px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-2);overflow-y:auto;white-space:pre-wrap;cursor:pointer;min-height:300px;max-height:calc(100vh - 220px);background:rgba(0,0,0,0.2);">Loading CEO output...</div>
       <div style="display:flex;gap:6px;padding:8px;border-top:1px solid var(--glass-border);">
         <input type="text" id="ceo-input" placeholder="Message CEO..." style="flex:1;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--glass-border);background:rgba(255,255,255,0.04);color:var(--text-1);font-family:'JetBrains Mono',monospace;font-size:.82rem;" onkeydown="if(event.key==='Enter')sendToCeo()">
-        <button onclick="sendToCeo()" style="padding:8px 14px;border-radius:var(--r-sm);border:none;background:var(--mercury-blue);color:var(--void);font-weight:600;cursor:pointer;font-size:.82rem;">↵</button>
+        <button onclick="sendToCeo(false)" title="Send keys without Enter (for selections/permissions)" style="padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--glass-border);background:rgba(255,255,255,0.04);color:var(--mercury-violet);font-weight:600;cursor:pointer;font-size:.82rem;">⇥</button>
+        <button onclick="sendToCeo()" title="Send + Enter" style="padding:8px 14px;border-radius:var(--r-sm);border:none;background:var(--mercury-blue);color:var(--void);font-weight:600;cursor:pointer;font-size:.82rem;">↵</button>
       </div>
     </div>
 
@@ -798,7 +799,7 @@
   </div>
 
   <script>
-    const API = 'http://localhost:3847/api';
+    const API = window.location.origin + '/api';
     const WS_URL = 'ws://localhost:3847';
     const PROJECT_COLORS = ['#f87171', '#5eead4', '#fbbf24', '#7dd3fc', '#fb923c', '#c084fc', '#fda4af', '#38bdf8'];
     let ws = null;
@@ -991,17 +992,16 @@
       return {};
     }
 
-    async function apiFetch(url) {
+    async function apiFetch(url, opts) {
       if (useMock) return mockFetch(url);
       try {
-        const r = await fetch(url);
+        const r = await fetch(url, opts);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         setApiStatus(true);
         return r.json();
       } catch (e) {
-        useMock = true;
-        setApiStatus(false);
-        return mockFetch(url);
+        if (!opts) { useMock = true; setApiStatus(false); return mockFetch(url); }
+        throw e;
       }
     }
 
@@ -1100,8 +1100,10 @@
         const data = await apiFetch(API.replace('/api','') + '/output?lines=100');
         if (data.output) {
           ceoFullOutput = data.output;
-          const lastResponse = extractLastResponse(data.output);
-          document.getElementById('ceo-response').textContent = lastResponse || '(no output)';
+          const lines = data.output.trim().split('\n').filter(l => l.trim());
+          document.getElementById('ceo-response').textContent = lines.slice(-30).join('\n') || '(no output)';
+          const el = document.getElementById('ceo-response');
+          el.scrollTop = el.scrollHeight;
           document.getElementById('ceo-status').textContent = '● Connected' + (data.context_pct ? ' | Context: ' + data.context_pct + '%' : '');
           document.getElementById('ceo-status').style.color = 'var(--ok)';
         }
@@ -1112,28 +1114,52 @@
       }
     }
 
-    async function sendToCeo() {
+    async function sendToCeo(pressEnter = true) {
       const input = document.getElementById('ceo-input');
       const text = input.value.trim();
       if (!text) return;
       input.value = '';
       try {
-        await apiFetch(API.replace('/api','') + '/input', {
+        const r = await fetch(API.replace('/api','') + '/input', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({text: text, press_enter: true})
+          body: JSON.stringify({text: text, press_enter: pressEnter})
         });
-        document.getElementById('ceo-response').textContent += '\n> ' + text + '\n(sending...)';
-        setTimeout(loadCeo, 3000);
+        const data = await r.json();
+        setTimeout(loadCeo, 1000);
       } catch(e) {
-        document.getElementById('ceo-response').textContent = 'Error: ' + e.message;
+        document.getElementById('ceo-response').textContent = 'Send error: ' + e.message;
       }
     }
 
-    function showCeoModal() {
-      document.getElementById('ceo-full-output').textContent = ceoFullOutput || '(no output captured)';
+    let ceoModalOpen = false;
+
+    async function showCeoModal() {
+      ceoModalOpen = true;
       document.getElementById('ceo-modal').style.display = 'block';
+      refreshCeoModal();
     }
+
+    async function refreshCeoModal() {
+      if (!ceoModalOpen) return;
+      await loadCeo();
+      document.getElementById('ceo-full-output').textContent = ceoFullOutput || '(no output captured)';
+      const el = document.getElementById('ceo-full-output');
+      el.scrollTop = el.scrollHeight;
+    }
+
+    document.getElementById('ceo-modal').addEventListener('click', function(e) {
+      if (e.target === this) { ceoModalOpen = false; this.style.display = 'none'; }
+    });
+
+    setInterval(async () => {
+      await loadCeo();
+      if (ceoModalOpen) {
+        document.getElementById('ceo-full-output').textContent = ceoFullOutput || '(no output captured)';
+        const el = document.getElementById('ceo-full-output');
+        el.scrollTop = el.scrollHeight;
+      }
+    }, 1000);
 
     async function loadAll() {
       await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop(), loadSOPs(), loadAutomations(), loadCeo()]);

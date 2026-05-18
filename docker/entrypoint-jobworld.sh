@@ -31,9 +31,13 @@ tmux new-session -d -s "$TMUX_SESSION" -n main
 tmux send-keys -t "$TMUX_SESSION" "cd $INSTANCE_DIR" Enter
 sleep 1
 
-# Launch Claude Code in tmux
-tmux send-keys -t "$TMUX_SESSION" "claude" Enter
+# Launch Claude Code in tmux with bypass permissions
+tmux send-keys -t "$TMUX_SESSION" "claude --permission-mode bypassPermissions" Enter
 sleep 5
+
+# Set model (claude-3-5-sonnet-latest doesn't exist, must set explicitly)
+tmux send-keys -t "$TMUX_SESSION" "/model claude-opus-4-6" Enter
+sleep 2
 
 # Start Jobworld CAVE server in background
 cd /agent
