@@ -1027,14 +1027,34 @@
 
     let ceoFullOutput = '';
 
+    function extractLastResponse(output) {
+      const marker = '◇';
+      const lines = output.split('\n');
+      let lastMarkerIdx = -1;
+      let prevMarkerIdx = -1;
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (lines[i].trim().startsWith(marker) || lines[i].includes(marker)) {
+          if (lastMarkerIdx === -1) lastMarkerIdx = i;
+          else { prevMarkerIdx = i; break; }
+        }
+      }
+      if (prevMarkerIdx >= 0 && lastMarkerIdx > prevMarkerIdx) {
+        return lines.slice(prevMarkerIdx + 1, lastMarkerIdx).join('\n').trim();
+      }
+      if (lastMarkerIdx > 0) {
+        const start = Math.max(0, lastMarkerIdx - 30);
+        return lines.slice(start, lastMarkerIdx).join('\n').trim();
+      }
+      return lines.slice(-15).join('\n');
+    }
+
     async function loadCeo() {
       try {
-        const data = await apiFetch(API.replace('/api','') + '/output?lines=50');
+        const data = await apiFetch(API.replace('/api','') + '/output?lines=100');
         if (data.output) {
           ceoFullOutput = data.output;
-          const lines = data.output.trim().split('\n');
-          const last30 = lines.slice(-15).join('\n');
-          document.getElementById('ceo-response').textContent = last30 || '(no output)';
+          const lastResponse = extractLastResponse(data.output);
+          document.getElementById('ceo-response').textContent = lastResponse || '(no output)';
           document.getElementById('ceo-status').textContent = '● Connected' + (data.context_pct ? ' | Context: ' + data.context_pct + '%' : '');
           document.getElementById('ceo-status').style.color = 'var(--ok)';
         }
