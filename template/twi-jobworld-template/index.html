@@ -604,6 +604,26 @@
     </div>
   </div>
 
+  <div class="card" style="border: 1px solid rgba(125,211,252,0.15);">
+    <h2>🤖 CEO Console</h2>
+    <div id="ceo-status" style="font-size:.75rem;color:var(--text-3);margin-bottom:8px;">Checking...</div>
+    <div id="ceo-response" style="background:rgba(0,0,0,0.3);border-radius:var(--r-sm);padding:12px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text-2);max-height:200px;overflow-y:auto;white-space:pre-wrap;cursor:pointer;border:1px solid var(--glass-border);" onclick="showCeoModal()">Loading CEO output...</div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <input type="text" id="ceo-input" placeholder="Send message to CEO..." style="flex:1;padding:8px 12px;border-radius:var(--r-sm);border:1px solid var(--glass-border);background:rgba(255,255,255,0.04);color:var(--text-1);font-family:'JetBrains Mono',monospace;font-size:.85rem;" onkeydown="if(event.key==='Enter')sendToCeo()">
+      <button onclick="sendToCeo()" style="padding:8px 16px;border-radius:var(--r-sm);border:none;background:var(--mercury-blue);color:var(--void);font-weight:600;cursor:pointer;font-size:.85rem;">Send</button>
+    </div>
+  </div>
+
+  <div id="ceo-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;padding:40px;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="max-width:900px;margin:0 auto;background:var(--void);border:1px solid var(--glass-border);border-radius:var(--r-lg);padding:24px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">CEO Full Output</h2>
+        <button onclick="document.getElementById('ceo-modal').style.display='none'" style="background:none;border:none;color:var(--text-2);font-size:1.2rem;cursor:pointer;">✕</button>
+      </div>
+      <pre id="ceo-full-output" style="font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text-2);white-space:pre-wrap;line-height:1.5;"></pre>
+    </div>
+  </div>
+
   <div class="card">
     <h2>📋 Projects</h2>
     <div id="project-chart" style="font-family: monospace; line-height: 1.6;"></div>
@@ -1005,8 +1025,51 @@
       }
     }
 
+    let ceoFullOutput = '';
+
+    async function loadCeo() {
+      try {
+        const data = await apiFetch(API.replace('/api','') + '/output?lines=50');
+        if (data.output) {
+          ceoFullOutput = data.output;
+          const lines = data.output.trim().split('\n');
+          const last30 = lines.slice(-15).join('\n');
+          document.getElementById('ceo-response').textContent = last30 || '(no output)';
+          document.getElementById('ceo-status').textContent = '● Connected' + (data.context_pct ? ' | Context: ' + data.context_pct + '%' : '');
+          document.getElementById('ceo-status').style.color = 'var(--ok)';
+        }
+      } catch(e) {
+        document.getElementById('ceo-status').textContent = '○ Not connected';
+        document.getElementById('ceo-status').style.color = 'var(--text-3)';
+        document.getElementById('ceo-response').textContent = 'CEO not attached. Start the CAVE server first.';
+      }
+    }
+
+    async function sendToCeo() {
+      const input = document.getElementById('ceo-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      try {
+        await apiFetch(API.replace('/api','') + '/input', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({text: text, press_enter: true})
+        });
+        document.getElementById('ceo-response').textContent += '\n> ' + text + '\n(sending...)';
+        setTimeout(loadCeo, 3000);
+      } catch(e) {
+        document.getElementById('ceo-response').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function showCeoModal() {
+      document.getElementById('ceo-full-output').textContent = ceoFullOutput || '(no output captured)';
+      document.getElementById('ceo-modal').style.display = 'block';
+    }
+
     async function loadAll() {
-      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop(), loadSOPs(), loadAutomations()]);
+      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop(), loadSOPs(), loadAutomations(), loadCeo()]);
     }
 
     async function loadProjectChart() {
