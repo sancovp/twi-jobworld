@@ -1,0 +1,41 @@
+# Jobworld CAVE Image
+# Extends paia-agent:latest with Jobworld CAVE server
+#
+# Base (paia-agent:latest): Claude CLI + tmux
+# This layer adds: Jobworld CAVE server, global config sync, heartbeat
+
+FROM paia-agent:latest
+
+# Install CAVE + Jobworld server deps
+COPY requirements-jobworld.txt /tmp/requirements-jobworld.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-jobworld.txt || true
+
+# Install cave-teams
+COPY cave-teams/ /tmp/cave-teams/
+RUN pip install --no-cache-dir /tmp/cave-teams/ && rm -rf /tmp/cave-teams/
+
+# Create directories
+RUN mkdir -p /agent/jobworld /agent/.claude/rules /agent/.claude/skills
+
+# Copy Jobworld server package
+COPY server/ /agent/server/
+
+# Copy global sync script
+COPY sync_globals.sh /usr/local/bin/sync_globals.sh
+RUN chmod +x /usr/local/bin/sync_globals.sh
+
+# Copy entrypoint
+COPY entrypoint-jobworld.sh /usr/local/bin/entrypoint-jobworld.sh
+RUN chmod +x /usr/local/bin/entrypoint-jobworld.sh
+
+# Jobworld data volume (shared across instances on host)
+VOLUME ["/jobworld_data"]
+
+# Server port
+EXPOSE 3847
+
+ENV JOBWORLD_INSTANCE=""
+ENV JOBWORLD_PORT="3847"
+ENV JOBWORLD_TMUX="cave"
+
+CMD ["/usr/local/bin/entrypoint-jobworld.sh"]
