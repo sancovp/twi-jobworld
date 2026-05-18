@@ -85,12 +85,14 @@ class JobworldAgent(CAVEAgent):
 
     def _wire_ceo_heartbeat(self, interval: float = 300.0):
         from cave.core.mixins.anatomy import Tick
+        self._last_heartbeat_at = 0
 
         def _ceo_heartbeat_tick():
             if self.main_agent is None:
                 return
-            if time.time() - self.last_input_at < interval:
-                logger.info("CEO heartbeat skipped — recent input %ds ago", int(time.time() - self.last_input_at))
+            now = time.time()
+            idle_time = now - max(self.last_input_at, self._last_heartbeat_at)
+            if idle_time < interval:
                 return
             hb_path = self.jobworld_dir / "HEARTBEAT.md"
             if hb_path.exists():
@@ -104,12 +106,13 @@ class JobworldAgent(CAVEAgent):
             self.main_agent.send_keys("Enter")
             time.sleep(0.5)
             self.main_agent.send_keys("Enter")
+            self._last_heartbeat_at = time.time()
             logger.info("CEO heartbeat fired (%d chars)", len(prompt))
 
         self.heart.add_tick(Tick(
             name="ceo_heartbeat",
             callback=_ceo_heartbeat_tick,
-            every=interval,
+            every=30.0,
         ))
 
     def _default_heartbeat_prompt(self) -> str:
