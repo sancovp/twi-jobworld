@@ -1114,21 +1114,27 @@
       }
     }
 
+    let burstPoll = null;
+
     async function sendToCeo(pressEnter = true) {
       const input = document.getElementById('ceo-input');
       const text = input.value.trim();
       if (!text) return;
       input.value = '';
+      const el = document.getElementById('ceo-response');
+      el.textContent += '\n▶ SENT: ' + text + '\n⏳ Waiting for CEO...\n';
+      el.scrollTop = el.scrollHeight;
       try {
-        const r = await fetch(API.replace('/api','') + '/input', {
+        await fetch(API.replace('/api','') + '/input', {
           method: 'POST',
           headers: {'Content-Type':'application/json'},
           body: JSON.stringify({text: text, press_enter: pressEnter})
         });
-        const data = await r.json();
-        setTimeout(loadCeo, 1000);
+        if (burstPoll) clearInterval(burstPoll);
+        burstPoll = setInterval(loadCeo, 500);
+        setTimeout(() => { if (burstPoll) { clearInterval(burstPoll); burstPoll = null; } }, 30000);
       } catch(e) {
-        document.getElementById('ceo-response').textContent = 'Send error: ' + e.message;
+        el.textContent += '\n❌ Send error: ' + e.message;
       }
     }
 
