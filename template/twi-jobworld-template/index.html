@@ -331,6 +331,112 @@
       50% { border-color: rgba(167,139,250,0.35); }
     }
 
+    /* ── Automations / Calendar ── */
+    .auto-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .auto-card {
+      flex: 1 1 260px; max-width: 320px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-top: 3px solid var(--mercury-teal);
+      border-radius: var(--r-md); padding: 14px 16px;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: all .3s ease;
+    }
+    .auto-card:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(94,234,212,0.15);
+      box-shadow: 0 0 24px rgba(94,234,212,0.08);
+      transform: translateY(-1px);
+    }
+    .auto-card.disabled { opacity: .5; border-top-color: var(--text-3); }
+    .auto-card-name { font-weight: 600; font-size: .9rem; color: var(--text-1); margin-bottom: 2px; }
+    .auto-card-schedule {
+      font-family: 'JetBrains Mono',monospace;
+      font-size: .65rem; color: var(--mercury-teal); opacity: .8; margin-bottom: 4px;
+    }
+    .auto-card-desc { font-size: .75rem; color: var(--text-2); margin-bottom: 8px; }
+    .auto-card-meta {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: .7rem; color: var(--text-3);
+    }
+    .auto-card-actions { display: flex; gap: 6px; }
+    .auto-card-actions button {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-2); padding: 3px 10px; border-radius: 8px;
+      font-size: .65rem; cursor: pointer; transition: all .2s;
+      font-family: 'Inter',sans-serif;
+    }
+    .auto-card-actions button:hover { background: rgba(255,255,255,0.08); color: var(--text-1); }
+    .auto-card-actions button.danger:hover { background: rgba(248,113,113,0.15); color: var(--err); border-color: rgba(248,113,113,0.2); }
+    .auto-tags { margin-bottom: 6px; }
+    .auto-tag {
+      display: inline-block; font-size: .6rem; color: var(--mercury-blue);
+      background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.12);
+      padding: 1px 6px; border-radius: 8px; margin: 1px 2px;
+    }
+    .auto-empty { color: var(--text-3); font-style: italic; font-size: .85rem; padding: 16px 0; }
+    .blockage-badge {
+      display: inline-block; background: rgba(248,113,113,0.15);
+      color: var(--err); font-size: .65rem; font-weight: 600;
+      padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+      border: 1px solid rgba(248,113,113,0.2);
+    }
+    .blockage-item {
+      background: rgba(248,113,113,0.05); border: 1px solid rgba(248,113,113,0.1);
+      border-left: 3px solid var(--err); padding: 10px 14px; margin: 6px 0;
+      border-radius: var(--r-sm); font-size: .8rem;
+    }
+    .blockage-item-name { font-weight: 600; color: var(--mercury-rose); }
+    .blockage-item-time { font-size: .65rem; color: var(--text-3); font-family: 'JetBrains Mono',monospace; }
+    .blockage-item-actions { margin-top: 6px; }
+    .blockage-item-actions button {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-2); padding: 2px 8px; border-radius: 6px;
+      font-size: .6rem; cursor: pointer; margin-right: 4px; font-family: 'Inter',sans-serif;
+    }
+
+    /* Builder form */
+    .auto-builder { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .auto-builder.open { display: block; }
+    .auto-builder-row { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .auto-builder-field { flex: 1 1 200px; }
+    .auto-builder-field label {
+      display: block; font-size: .65rem; font-weight: 500;
+      color: var(--text-3); margin-bottom: 4px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .auto-builder-field input, .auto-builder-field textarea, .auto-builder-field select {
+      width: 100%; background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-1); padding: 8px 10px; border-radius: var(--r-sm);
+      font-family: 'JetBrains Mono',monospace; font-size: .75rem;
+      outline: none; transition: border-color .2s;
+    }
+    .auto-builder-field input:focus, .auto-builder-field textarea:focus, .auto-builder-field select:focus {
+      border-color: rgba(94,234,212,0.3); box-shadow: 0 0 0 3px rgba(94,234,212,0.08);
+    }
+    .auto-builder-presets { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .auto-builder-presets button {
+      background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.12);
+      color: var(--mercury-teal); padding: 4px 12px; border-radius: 12px;
+      font-size: .7rem; cursor: pointer; transition: all .2s; font-family: 'Inter',sans-serif;
+    }
+    .auto-builder-presets button:hover { background: rgba(94,234,212,0.15); }
+    .auto-builder-submit {
+      background: linear-gradient(135deg, var(--mercury-teal), var(--mercury-blue));
+      color: #000; border: none; padding: 8px 20px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: .85rem; font-weight: 600; font-family: 'Inter',sans-serif;
+      box-shadow: 0 0 16px rgba(94,234,212,0.12); transition: all .3s ease;
+    }
+    .auto-builder-submit:hover { box-shadow: 0 0 24px rgba(94,234,212,0.2); transform: translateY(-1px); }
+    .auto-builder-toggle {
+      background: rgba(94,234,212,0.08); border: 1px solid rgba(94,234,212,0.15);
+      color: var(--mercury-teal); padding: 6px 16px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: .8rem; font-weight: 500; font-family: 'Inter',sans-serif;
+      transition: all .2s; margin-bottom: 12px;
+    }
+    .auto-builder-toggle:hover { background: rgba(94,234,212,0.15); }
+
     /* ── Buttons ── */
     .refresh {
       background: linear-gradient(135deg, var(--mercury-blue), var(--mercury-violet));
@@ -543,6 +649,102 @@
   </div>
 
   <div class="card">
+    <h2>📅 Automations <span id="blockage-badge"></span></h2>
+    <button class="auto-builder-toggle" onclick="toggleBuilder()">+ New Automation</button>
+
+    <div id="auto-builder" class="auto-builder">
+      <div class="auto-builder-row">
+        <div class="auto-builder-field" style="flex:2"><label>Name</label><input type="text" id="ab-name" placeholder="daily_ralph_carton"></div>
+        <div class="auto-builder-field" style="flex:3"><label>Description</label><input type="text" id="ab-desc" placeholder="What this automation does"></div>
+      </div>
+      <div class="auto-builder-row">
+        <div class="auto-builder-field" style="flex:2">
+          <label>Schedule (cron)</label>
+          <input type="text" id="ab-schedule" placeholder="7 * * * *">
+          <div class="auto-builder-presets" style="margin-top:6px">
+            <button onclick="setPreset('7 * * * *')">Hourly</button>
+            <button onclick="setPreset('3 9 * * *')">Daily 9am</button>
+            <button onclick="setPreset('3 9 * * 1-5')">Weekdays</button>
+            <button onclick="setPreset('3 9 * * 1')">Weekly Mon</button>
+          </div>
+        </div>
+        <div class="auto-builder-field" style="flex:1">
+          <label>Priority (1-10)</label>
+          <input type="number" id="ab-priority" value="5" min="1" max="10">
+        </div>
+        <div class="auto-builder-field" style="flex:1">
+          <label>Enabled</label>
+          <select id="ab-enabled"><option value="true" selected>Yes</option><option value="false">No</option></select>
+        </div>
+      </div>
+      <!-- Action tabs: Code / Prompt / Chain -->
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="auto-builder-presets button" onclick="showActionTab('code')" id="tab-code" style="opacity:1">Code</button>
+        <button class="auto-builder-presets button" onclick="showActionTab('prompt')" id="tab-prompt" style="opacity:.5">Prompt</button>
+        <button class="auto-builder-presets button" onclick="showActionTab('chain')" id="tab-chain" style="opacity:.5">Chain</button>
+      </div>
+      <div id="action-code">
+        <div class="auto-builder-row">
+          <div class="auto-builder-field"><label>Code Pointer (module.func)</label><input type="text" id="ab-code" placeholder="cave.core.ralph_scheduler.dispatch_ralph"></div>
+          <div class="auto-builder-field"><label>Code Args (JSON)</label><input type="text" id="ab-args" placeholder='{"repo": "/home/GOD/project"}'></div>
+        </div>
+      </div>
+      <div id="action-prompt" style="display:none">
+        <div class="auto-builder-row">
+          <div class="auto-builder-field"><label>Prompt Template</label><textarea id="ab-prompt" rows="3" placeholder="Run {{task}} on {{repo}}..."></textarea></div>
+          <div class="auto-builder-field"><label>Template Vars (JSON)</label><input type="text" id="ab-template-vars" placeholder='{"task": "sync", "repo": "carton"}'></div>
+        </div>
+      </div>
+      <div id="action-chain" style="display:none">
+        <div class="auto-builder-row">
+          <div class="auto-builder-field" style="flex:1">
+            <label>Chain Type</label>
+            <select id="ab-chain-type"><option value="config_link">config_link</option><option value="chain">chain</option><option value="eval_chain">eval_chain</option></select>
+          </div>
+          <div class="auto-builder-field" style="flex:3"><label>Chain Spec (JSON)</label><textarea id="ab-chain-spec" rows="3" placeholder='{"type":"config_link","name":"ralph_carton","goal":"Fix validation"}'></textarea></div>
+        </div>
+      </div>
+      <div class="auto-builder-row">
+        <div class="auto-builder-field"><label>Tags (comma-separated)</label><input type="text" id="ab-tags" placeholder="carton, daily, ralph"></div>
+        <div class="auto-builder-field"><label>Expected Deliverables (comma-separated paths)</label><input type="text" id="ab-deliverables" placeholder="/tmp/result.json, /tmp/output.md"></div>
+      </div>
+      <div class="auto-builder-row">
+        <div class="auto-builder-field"><label>Depends On (comma-separated automation names)</label><input type="text" id="ab-depends" placeholder="daily-carton-sync, weekly-report"></div>
+        <div class="auto-builder-field"><label>Parallel (comma-separated automation names)</label><input type="text" id="ab-parallel" placeholder="other-job-1, other-job-2"></div>
+      </div>
+      <div class="auto-builder-row">
+        <div class="auto-builder-field">
+          <label>Delivery Type</label>
+          <select id="ab-delivery-type"><option value="">None</option><option value="file">File</option><option value="tmux">Tmux</option><option value="discord">Discord</option><option value="agent">Agent</option><option value="webhook">Webhook</option><option value="callback">Callback</option></select>
+        </div>
+        <div class="auto-builder-field"><label>Delivery Path/URL</label><input type="text" id="ab-delivery-target" placeholder="/tmp/results/{date}.json"></div>
+        <div class="auto-builder-field" style="flex:0 0 auto">
+          <label>One-shot</label>
+          <input type="checkbox" id="ab-oneshot" style="width:18px;height:18px;accent-color:var(--mercury-teal);margin-top:6px">
+        </div>
+      </div>
+      <button class="auto-builder-submit" onclick="submitAutomation()">Schedule Automation</button>
+    </div>
+
+    <div id="automations-list"></div>
+
+    <div id="blockages-section" style="margin-top:16px;display:none">
+      <h3 style="font-size:.85rem;color:var(--mercury-rose);margin-bottom:8px">Blockages</h3>
+      <div id="blockages-list"></div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)">
+      <h3 style="font-size:.8rem;color:var(--text-3);margin-bottom:8px">Sources</h3>
+      <div id="sources-list" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;align-items:end">
+        <div class="auto-builder-field" style="flex:1"><label>Name</label><input type="text" id="src-name" placeholder="remote-cave"></div>
+        <div class="auto-builder-field" style="flex:2"><label>URL</label><input type="text" id="src-url" placeholder="http://localhost:8080/automations"></div>
+        <button onclick="addSource()" style="background:rgba(94,234,212,0.08);border:1px solid rgba(94,234,212,0.15);color:var(--mercury-teal);padding:8px 14px;border-radius:var(--r-sm);cursor:pointer;font-size:.75rem;font-family:Inter,sans-serif;white-space:nowrap">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>📅 Simulation Days</h2>
     <div id="day-stats" class="day-card">
       <div class="metric"><div class="metric-value" id="current-day">-</div><div class="metric-label">Current Day</div></div>
@@ -725,6 +927,12 @@
           ],
         },
       ],
+      automations: [
+        { name: 'daily-carton-sync', type: 'CronAutomation', schedule: '3 9 * * *', enabled: true, run_count: 12, last_run: '2026-05-10T09:03:00Z', description: 'Sync CartON concepts to ChromaDB', tags: ['carton', 'daily'] },
+        { name: 'weekly-report', type: 'CronAutomation', schedule: '3 9 * * 1', enabled: true, run_count: 3, last_run: '2026-05-05T09:03:00Z', tags: ['report'] },
+        { name: 'paused-job', type: 'CronAutomation', schedule: '7 * * * *', enabled: false, run_count: 0, last_run: null, description: 'Disabled automation' },
+      ],
+      blockages: [],
     };
 
     async function mockFetch(url) {
@@ -737,6 +945,8 @@
       if (url.includes('/day')) return MOCK.day;
       if (url.includes('/sops')) return MOCK.sops;
       if (url.includes('/flows')) return MOCK.flows;
+      if (url.includes('/automations')) return MOCK.automations;
+      if (url.includes('/blockages')) return MOCK.blockages;
       return {};
     }
 
@@ -774,6 +984,9 @@
             if (msg.type === 'event' || msg.type === 'round_start') {
               loadAll();
             }
+            if (msg.type === 'automation_scheduled' || msg.type === 'automation_cancelled' || msg.type === 'automation_toggled') {
+              loadAutomations();
+            }
           } catch (e) {}
         };
         ws.onclose = () => {
@@ -793,7 +1006,7 @@
     }
 
     async function loadAll() {
-      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop(), loadSOPs()]);
+      await Promise.all([loadMetrics(), loadProjectChart(), loadOrgChart(), loadTasks(), loadEvents(), loadDay(), loadRalphLoop(), loadSOPs(), loadAutomations()]);
     }
 
     async function loadProjectChart() {
@@ -1049,6 +1262,239 @@
       } catch (e) {
         document.getElementById('sop-library').innerHTML = '<div class="sop-empty">Error loading SOPs</div>';
       }
+    }
+
+    // ── Cron helpers ──
+    const CRON_PRESETS = { 'Hourly': '7 * * * *', 'Daily 9am': '3 9 * * *', 'Weekdays': '3 9 * * 1-5', 'Weekly Mon': '3 9 * * 1' };
+    function cronToHuman(cron) {
+      if (!cron) return '';
+      const p = cron.split(' ');
+      if (p.length !== 5) return cron;
+      const [m, h, dom, mon, dow] = p;
+      if (m.startsWith('*/')) return `Every ${m.slice(2)} min`;
+      if (h === '*' && dom === '*') return `Every hour at :${m.padStart(2,'0')}`;
+      const days = {'1':'Mon','2':'Tue','3':'Wed','4':'Thu','5':'Fri','6':'Sat','0':'Sun','1-5':'Weekdays','*':'day'};
+      const dowStr = days[dow] || dow;
+      if (dom === '*' && mon === '*') return `${dowStr} ${h}:${m.padStart(2,'0')}`;
+      return cron;
+    }
+    function setPreset(val) { document.getElementById('ab-schedule').value = val; }
+    function showActionTab(tab) {
+      ['code','prompt','chain'].forEach(t => {
+        document.getElementById('action-' + t).style.display = t === tab ? 'block' : 'none';
+        document.getElementById('tab-' + t).style.opacity = t === tab ? '1' : '.5';
+      });
+    }
+    function toggleBuilder() {
+      document.getElementById('auto-builder').classList.toggle('open');
+    }
+
+    // ── Automations CRUD ──
+    async function loadAutomations() {
+      try {
+        const [autos, blockages] = await Promise.all([
+          apiFetch(API + '/automations'),
+          apiFetch(API + '/blockages'),
+        ]);
+
+        // Blockage badge
+        const badge = document.getElementById('blockage-badge');
+        if (blockages.length > 0) {
+          badge.innerHTML = '<span class="blockage-badge">' + blockages.length + ' blockage' + (blockages.length > 1 ? 's' : '') + '</span>';
+        } else {
+          badge.innerHTML = '';
+        }
+
+        // Automations grid
+        let html = '';
+        if (!autos || autos.length === 0) {
+          html = '<div class="auto-empty">No automations scheduled. Create one above.</div>';
+        } else {
+          html += '<div class="auto-grid">';
+          autos.forEach(a => {
+            const tags = a.tags || [];
+            const cls = a.enabled ? '' : ' disabled';
+            html += '<div class="auto-card' + cls + '">';
+            html += '<div class="auto-card-name">' + a.name + '</div>';
+            html += '<div class="auto-card-schedule">' + cronToHuman(a.schedule) + ' <span style="opacity:.5">(' + (a.schedule || '') + ')</span></div>';
+            if (a.description) html += '<div class="auto-card-desc">' + a.description + '</div>';
+            if (tags.length) {
+              html += '<div class="auto-tags">' + tags.map(t => '<span class="auto-tag">' + t + '</span>').join('') + '</div>';
+            }
+            html += '<div class="auto-card-meta">';
+            html += '<span>' + (a.type || 'Cron') + ' · ' + (a.run_count || 0) + ' runs' + (a.last_run ? ' · last: ' + new Date(a.last_run).toLocaleString() : '') + '</span>';
+            html += '<div class="auto-card-actions">';
+            html += '<button onclick="toggleAuto(\'' + a.name + '\')">' + (a.enabled ? 'Disable' : 'Enable') + '</button>';
+            html += '<button class="danger" onclick="cancelAuto(\'' + a.name + '\')">Cancel</button>';
+            html += '</div></div></div>';
+          });
+          html += '</div>';
+        }
+        document.getElementById('automations-list').innerHTML = html;
+
+        // Blockages section
+        const bSection = document.getElementById('blockages-section');
+        if (blockages.length > 0) {
+          bSection.style.display = 'block';
+          let bHtml = '';
+          blockages.forEach(b => {
+            bHtml += '<div class="blockage-item">';
+            bHtml += '<span class="blockage-item-name">' + (b.automation || 'unknown') + '</span> ';
+            bHtml += '<span class="blockage-item-time">' + (b.timestamp ? new Date(b.timestamp).toLocaleString() : '') + '</span>';
+            const report = b.block_report || {};
+            if (report.blocked_reason) bHtml += '<div style="margin-top:4px;font-size:.75rem;color:var(--text-2)">' + report.blocked_reason + '</div>';
+            bHtml += '<div class="blockage-item-actions">';
+            bHtml += '<button onclick="markBlockageRead(\'' + b.id + '\')">Mark Read</button>';
+            bHtml += '<button onclick="resolveBlockage(\'' + (b.automation || '') + '\')">Resolve</button>';
+            bHtml += '</div></div>';
+          });
+          document.getElementById('blockages-list').innerHTML = bHtml;
+        } else {
+          bSection.style.display = 'none';
+        }
+        loadSources();
+      } catch (e) {
+        document.getElementById('automations-list').innerHTML = '<div class="auto-empty">Error loading automations: ' + e.message + '</div>';
+      }
+    }
+
+    async function submitAutomation() {
+      const name = document.getElementById('ab-name').value.trim();
+      const schedule = document.getElementById('ab-schedule').value.trim();
+      if (!name || !schedule) { alert('Name and schedule are required'); return; }
+
+      const spec = { name, schedule };
+      const desc = document.getElementById('ab-desc').value.trim();
+      if (desc) spec.description = desc;
+
+      const code = document.getElementById('ab-code').value.trim();
+      if (code) spec.code_pointer = code;
+
+      const argsStr = document.getElementById('ab-args').value.trim();
+      if (argsStr) { try { spec.code_args = JSON.parse(argsStr); } catch(e) { alert('Invalid JSON in code args'); return; } }
+
+      const prompt = document.getElementById('ab-prompt').value.trim();
+      if (prompt) spec.prompt_template = prompt;
+
+      const templateVarsStr = document.getElementById('ab-template-vars').value.trim();
+      if (templateVarsStr) { try { spec.template_vars = JSON.parse(templateVarsStr); } catch(e) { alert('Invalid JSON in template vars'); return; } }
+
+      const chainSpecStr = document.getElementById('ab-chain-spec').value.trim();
+      if (chainSpecStr) {
+        try {
+          spec.chain_spec = JSON.parse(chainSpecStr);
+          spec.chain_spec.type = spec.chain_spec.type || document.getElementById('ab-chain-type').value;
+        } catch(e) { alert('Invalid JSON in chain spec'); return; }
+      }
+
+      const priority = parseInt(document.getElementById('ab-priority').value);
+      if (priority) spec.priority = priority;
+
+      spec.enabled = document.getElementById('ab-enabled').value === 'true';
+      spec.one_shot = document.getElementById('ab-oneshot').checked;
+
+      const tags = document.getElementById('ab-tags').value.trim();
+      if (tags) spec.tags = tags.split(',').map(t => t.trim()).filter(Boolean);
+
+      const deliverables = document.getElementById('ab-deliverables').value.trim();
+      if (deliverables) spec.expected_deliverables = deliverables.split(',').map(t => t.trim()).filter(Boolean);
+
+      const depends = document.getElementById('ab-depends').value.trim();
+      if (depends) spec.depends_on = depends.split(',').map(t => t.trim()).filter(Boolean);
+
+      const parallel = document.getElementById('ab-parallel').value.trim();
+      if (parallel) spec.parallel = parallel.split(',').map(t => t.trim()).filter(Boolean);
+
+      const delType = document.getElementById('ab-delivery-type').value;
+      const delTarget = document.getElementById('ab-delivery-target').value.trim();
+      if (delType) spec.delivery = { type: delType, path: delTarget };
+
+      try {
+        const result = await fetch(API + '/automations', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(spec)
+        }).then(r => r.json());
+        if (result.status === 'error') { alert('Error: ' + result.error); return; }
+        document.getElementById('auto-builder').classList.remove('open');
+        ['ab-name','ab-schedule','ab-desc','ab-code','ab-args','ab-prompt','ab-template-vars','ab-chain-spec','ab-tags','ab-deliverables','ab-depends','ab-parallel','ab-delivery-target'].forEach(id => { document.getElementById(id).value = ''; });
+        document.getElementById('ab-oneshot').checked = false;
+        document.getElementById('ab-priority').value = '5';
+        document.getElementById('ab-enabled').value = 'true';
+        document.getElementById('ab-delivery-type').value = '';
+        document.getElementById('ab-chain-type').value = 'config_link';
+        showActionTab('code');
+        loadAutomations();
+      } catch (e) { alert('Failed: ' + e.message); }
+    }
+
+    async function toggleAuto(name) {
+      try {
+        await fetch(API + '/automations/' + encodeURIComponent(name) + '/toggle', { method: 'PUT' }).then(r => r.json());
+        loadAutomations();
+      } catch (e) { console.error('Toggle failed:', e); }
+    }
+
+    async function cancelAuto(name) {
+      if (!confirm('Cancel automation "' + name + '"? This removes the JSON file.')) return;
+      try {
+        await fetch(API + '/automations/' + encodeURIComponent(name), { method: 'DELETE' }).then(r => r.json());
+        loadAutomations();
+      } catch (e) { console.error('Cancel failed:', e); }
+    }
+
+    async function markBlockageRead(id) {
+      try {
+        await fetch(API + '/blockages/' + encodeURIComponent(id) + '/read', { method: 'POST' }).then(r => r.json());
+        loadAutomations();
+      } catch (e) { console.error('Mark read failed:', e); }
+    }
+
+    async function loadSources() {
+      try {
+        const sources = await apiFetch(API + '/calendar-sources');
+        let html = '';
+        sources.forEach(s => {
+          const dot = s.type === 'dir' ? 'var(--ok)' : 'var(--mercury-blue)';
+          html += '<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);padding:4px 10px;border-radius:8px;font-size:.7rem">';
+          html += '<span style="width:6px;height:6px;border-radius:50%;background:' + dot + ';display:inline-block"></span>';
+          html += '<span style="color:var(--text-1)">' + s.name + '</span>';
+          html += '<span style="color:var(--text-3)">' + (s.type === 'dir' ? s.path : s.url) + '</span>';
+          if (s.name !== 'local') html += '<button onclick="removeSource(\'' + s.name + '\')" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:.7rem;padding:0 2px">x</button>';
+          html += '</div>';
+        });
+        document.getElementById('sources-list').innerHTML = html;
+      } catch (e) { console.error('Sources error:', e); }
+    }
+
+    async function addSource() {
+      const name = document.getElementById('src-name').value.trim();
+      const url = document.getElementById('src-url').value.trim();
+      if (!name || !url) { alert('Name and URL required'); return; }
+      try {
+        await fetch(API + '/calendar-sources', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, type: 'http', url })
+        }).then(r => r.json());
+        document.getElementById('src-name').value = '';
+        document.getElementById('src-url').value = '';
+        loadSources();
+        loadAutomations();
+      } catch (e) { alert('Failed: ' + e.message); }
+    }
+
+    async function removeSource(name) {
+      try {
+        await fetch(API + '/calendar-sources/' + encodeURIComponent(name), { method: 'DELETE' }).then(r => r.json());
+        loadSources();
+        loadAutomations();
+      } catch (e) { console.error('Remove source failed:', e); }
+    }
+
+    async function resolveBlockage(automation) {
+      try {
+        await fetch(API + '/blockages/' + encodeURIComponent(automation) + '/resolve', { method: 'POST' }).then(r => r.json());
+        loadAutomations();
+      } catch (e) { console.error('Resolve failed:', e); }
     }
 
     loadAll();
