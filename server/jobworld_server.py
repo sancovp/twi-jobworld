@@ -52,6 +52,19 @@ class JobworldHTTPServer(CAVEHTTPServer):
 
     def _register_jobworld_routes(self):
         jw = self.jw
+        import time as _time
+
+        @self.app.post("/input")
+        def send_input_jw(data: Dict[str, Any]):
+            jw.last_input_at = _time.time()
+            if not jw._ensure_attached():
+                return {"error": "not attached"}
+            text = data.get("text", "")
+            if data.get("press_enter", True):
+                jw.main_agent.send_keys(text, "Enter")
+            else:
+                jw.main_agent.send_keys(text)
+            return {"sent": True, "text": text[:100]}
 
         # === Dashboard ===
         @self.app.get("/")

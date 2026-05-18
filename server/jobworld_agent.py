@@ -58,6 +58,7 @@ class JobworldAgent(CAVEAgent):
         }
 
         self._ws_clients: set = set()
+        self.last_input_at: float = 0
 
         config = CAVEConfig(
             port=port,
@@ -87,6 +88,9 @@ class JobworldAgent(CAVEAgent):
 
         def _ceo_heartbeat_tick():
             if self.main_agent is None:
+                return
+            if time.time() - self.last_input_at < interval:
+                logger.info("CEO heartbeat skipped — recent input %ds ago", int(time.time() - self.last_input_at))
                 return
             hb_path = self.jobworld_dir / "HEARTBEAT.md"
             if hb_path.exists():
