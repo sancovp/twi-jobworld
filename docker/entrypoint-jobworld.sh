@@ -17,6 +17,39 @@ mkdir -p "$INSTANCE_DIR/.claude/rules" "$INSTANCE_DIR/.claude/skills"
 [ -f "$INSTANCE_DIR/event-stream/data.json" ] || echo '{}' > "$INSTANCE_DIR/event-stream/data.json"
 [ -f "$INSTANCE_DIR/event-stream/events.jsonl" ] || touch "$INSTANCE_DIR/event-stream/events.jsonl"
 
+# Copy template files if missing
+[ -f "$INSTANCE_DIR/index.html" ] || cp /agent/template/twi-jobworld-template/index.html "$INSTANCE_DIR/index.html" 2>/dev/null
+[ -f "$INSTANCE_DIR/HEARTBEAT.md" ] || cp /agent/template/twi-jobworld-template/HEARTBEAT.md "$INSTANCE_DIR/HEARTBEAT.md" 2>/dev/null
+
+# Copy skills into instance
+for skill_dir in /agent/skills/*/; do
+    skill_name=$(basename "$skill_dir")
+    target="$INSTANCE_DIR/.claude/skills/$skill_name"
+    [ -d "$target" ] || cp -r "$skill_dir" "$target"
+done
+
+# Write CEO CLAUDE.md if missing
+if [ ! -f "$INSTANCE_DIR/CLAUDE.md" ]; then
+cat > "$INSTANCE_DIR/CLAUDE.md" << CEOMD
+# CEO — $INSTANCE Jobworld
+
+You are the CEO of this Jobworld instance.
+Server: http://localhost:$PORT
+Dashboard: http://localhost:$PORT
+
+## Your Job
+1. Check tasks: curl http://localhost:$PORT/api/tasks/supposedly-done
+2. Review and approve/reject tasks
+3. Dispatch departments by running agent teams
+4. Monitor via dashboard
+
+## Available Skills
+- ceo-bootstrap: Full CEO workflow
+- jobworld-api: All API endpoints
+- jobworld-report-event: Event format for agents
+CEOMD
+fi
+
 # Sync global rules/skills from /jobworld_data/.claude/ into instance
 /usr/local/bin/sync_globals.sh "$INSTANCE_DIR"
 

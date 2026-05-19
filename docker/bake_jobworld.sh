@@ -37,10 +37,17 @@ usage() {
 
 build() {
     echo "Building Jobworld CAVE image..."
+    MONO="/home/GOD/gnosys-plugin-v2"
     cp -r "$JW_ROOT/server" "$SCRIPT_DIR/server"
-    cp -r /home/GOD/gnosys-plugin-v2/application/cave-teams "$SCRIPT_DIR/cave-teams"
+    cp -r "$JW_ROOT/template" "$SCRIPT_DIR/template"
+    cp -r "$JW_ROOT/skills" "$SCRIPT_DIR/skills"
+    cp -r "$MONO/base/sanctuary-system/llegos" "$SCRIPT_DIR/llegos"
+    cp -r "$MONO/application/cave-teams" "$SCRIPT_DIR/cave-teams"
+    cp -r "$MONO/application/cave" "$SCRIPT_DIR/cave"
+    cp -r "$MONO/base/heaven-framework" "$SCRIPT_DIR/heaven-framework"
+    cp -r "$MONO/base/sdna" "$SCRIPT_DIR/sdna"
     docker build -t "$IMAGE_TAG" -f "$SCRIPT_DIR/Dockerfile.jobworld" "$SCRIPT_DIR"
-    rm -rf "$SCRIPT_DIR/server" "$SCRIPT_DIR/cave-teams"
+    rm -rf "$SCRIPT_DIR/server" "$SCRIPT_DIR/template" "$SCRIPT_DIR/skills" "$SCRIPT_DIR/llegos" "$SCRIPT_DIR/cave-teams" "$SCRIPT_DIR/cave" "$SCRIPT_DIR/heaven-framework" "$SCRIPT_DIR/sdna"
     echo "Image built: $IMAGE_TAG"
 }
 

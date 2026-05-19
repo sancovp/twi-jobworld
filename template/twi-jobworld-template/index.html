@@ -1095,22 +1095,30 @@
       return lines.slice(-15).join('\n');
     }
 
+    let lastCeoContent = '';
+
     async function loadCeo() {
       try {
-        const data = await apiFetch(API.replace('/api','') + '/output?lines=100');
-        if (data.output) {
+        const r = await fetch(API.replace('/api','') + '/output?lines=100');
+        const data = await r.json();
+        if (data.output && data.output !== lastCeoContent) {
+          lastCeoContent = data.output;
           ceoFullOutput = data.output;
-          const lines = data.output.trim().split('\n').filter(l => l.trim());
-          document.getElementById('ceo-response').textContent = lines.slice(-30).join('\n') || '(no output)';
+          const lines = data.output.split('\n');
           const el = document.getElementById('ceo-response');
-          el.scrollTop = el.scrollHeight;
-          document.getElementById('ceo-status').textContent = '● Connected' + (data.context_pct ? ' | Context: ' + data.context_pct + '%' : '');
+          const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 30;
+          el.innerHTML = lines.slice(-40).map(l => {
+            const t = l.replace(/</g,'&lt;');
+            if (t.match(/^❯/)) return '<span style="color:var(--mercury-blue);font-weight:600">' + t + '</span>';
+            return t;
+          }).join('\n');
+          if (wasAtBottom) el.scrollTop = el.scrollHeight;
+          document.getElementById('ceo-status').textContent = '● Live' + (data.context_pct ? ' | ' + data.context_pct + '%' : '');
           document.getElementById('ceo-status').style.color = 'var(--ok)';
         }
       } catch(e) {
-        document.getElementById('ceo-status').textContent = '○ Not connected';
+        document.getElementById('ceo-status').textContent = '○ Disconnected';
         document.getElementById('ceo-status').style.color = 'var(--text-3)';
-        document.getElementById('ceo-response').textContent = 'CEO not attached. Start the CAVE server first.';
       }
     }
 
@@ -1301,7 +1309,11 @@
       }
     }
 
+    let ralphEditing = false;
+    document.getElementById('panel-afk')?.addEventListener('focusin', () => { ralphEditing = true; });
+
     async function loadRalphLoop() {
+      if (ralphEditing) return;
       try {
         const data = await apiFetch(API + '/ralph-loop');
         const status = document.getElementById('ralph-status');
@@ -1337,9 +1349,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ on, constant, next })
         }).then(r => r.json());
+        ralphEditing = false;
         loadRalphLoop();
       } catch (e) {
         console.error('Failed to save Ralph loop:', e);
+        ralphEditing = false;
       }
     }
 

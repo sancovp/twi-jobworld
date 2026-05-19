@@ -10,15 +10,30 @@ FROM paia-agent:latest
 COPY requirements-jobworld.txt /tmp/requirements-jobworld.txt
 RUN pip install --no-cache-dir -r /tmp/requirements-jobworld.txt || true
 
-# Install cave-teams
+# Install monorepo packages
+COPY llegos/ /tmp/llegos/
+COPY heaven-framework/ /tmp/heaven-framework/
+COPY sdna/ /tmp/sdna/
+COPY cave/ /tmp/cave/
 COPY cave-teams/ /tmp/cave-teams/
-RUN pip install --no-cache-dir /tmp/cave-teams/ && rm -rf /tmp/cave-teams/
+RUN pip install --no-cache-dir /tmp/llegos/ \
+    && pip install --no-cache-dir --no-deps /tmp/heaven-framework/ \
+    && pip install --no-cache-dir /tmp/sdna/ /tmp/cave/ /tmp/cave-teams/ \
+    && rm -rf /tmp/llegos/ /tmp/heaven-framework/ /tmp/sdna/ /tmp/cave/ /tmp/cave-teams/
+
+# Update Claude Code CLI to latest
+RUN npm install -g @anthropic-ai/claude-code@latest 2>/dev/null || true
+
+# Create non-root user (Claude Code refuses bypass perms as root)
+RUN useradd -m -s /bin/bash ceo && mkdir -p /agent /jobworld_data
 
 # Create directories
 RUN mkdir -p /agent/jobworld /agent/.claude/rules /agent/.claude/skills
 
-# Copy Jobworld server package
+# Copy Jobworld server package + template + skills
 COPY server/ /agent/server/
+COPY template/ /agent/template/
+COPY skills/ /agent/skills/
 
 # Copy global sync script
 COPY sync_globals.sh /usr/local/bin/sync_globals.sh
@@ -28,8 +43,8 @@ RUN chmod +x /usr/local/bin/sync_globals.sh
 COPY entrypoint-jobworld.sh /usr/local/bin/entrypoint-jobworld.sh
 RUN chmod +x /usr/local/bin/entrypoint-jobworld.sh
 
-# Jobworld data volume (shared across instances on host)
-VOLUME ["/jobworld_data"]
+# Jobworld data dir (mount a volume here for persistence)
+RUN mkdir -p /jobworld_data && chown ceo:ceo /jobworld_data
 
 # Server port
 EXPOSE 3847
@@ -38,4 +53,7 @@ ENV JOBWORLD_INSTANCE=""
 ENV JOBWORLD_PORT="3847"
 ENV JOBWORLD_TMUX="cave"
 
+RUN chown -R ceo:ceo /agent
+
+USER ceo
 CMD ["/usr/local/bin/entrypoint-jobworld.sh"]
