@@ -26,7 +26,7 @@ See `client.schema.json` for the formal contract. Summary:
 | `targeting.email_statuses` | string[] | `jwout pull --status` | e.g. verified |
 | `targeting.domains` | string[] | `jwout pull --domains` | seed brand domains (optional) |
 | `targeting.notes` | string | LLM | who qualifies (TAM logic) |
-| `from_addresses` | string[] | `jwout send --from` | cold sending identities (rotate) |
+| `sending.domains[]` | object[] | `jwout send --from` (deliver step) | cold sending-domain **objects** — see below |
 | `from_name` | string | `jwout send --from-name` | display name on the From line |
 | `reply_to` | string | `jwout send --reply-to` | monitored reply address |
 | `calendar_url` | string | LLM (CTA) | the booking link |
@@ -37,7 +37,17 @@ See `client.schema.json` for the formal contract. Summary:
 | `host_base_url` | string | `HOST_DIR`/`HOST_BASE_URL` for `jwout host` | where assets are served |
 | `env_profile` | string | deployment | which secret bundle (SMTP/IMAP/API keys) to load |
 
-Anything not yet provided by the client is set to `null` and documented as
+### `sending.domains[]` — the cold-domain config object
+
+Each is `{domain, spf, dkim, dmarc, warmup_status, warmup_started_at,
+from_addresses[], daily_cap}`. A domain is a data object like any other; **"warmed"
+is the `warmup_status` field** (`not_started | warming | ready`), not a separate
+kind of thing. The deliver step sends only from domains whose `warmup_status` is
+`ready`, and rotates across their `from_addresses` respecting `daily_cap`. That
+the value takes ~2–4 weeks and money to reach `ready` is acquisition cost — it is
+still a config field, exactly like a paid API key.
+
+Anything not yet provided by the client is set to `null`/`[]` and documented as
 `NEEDS-FROM-<client>` in their `README.md`. Never fabricate a value.
 
 ## Instruction files

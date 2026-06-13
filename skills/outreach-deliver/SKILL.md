@@ -14,8 +14,8 @@ exactly the subject and body it is given.
 
 - The copy file from `outreach-write` (subject on line 1, body after).
 - For the video variant: the hosted teaser URL from `outreach-teaser`.
-- `$JW_CLIENT_DIR/client.json` → `from_addresses` (rotate), `from_name`,
-  `reply_to`, `variants`, `cohorts`.
+- `$JW_CLIENT_DIR/client.json` → `sending.domains[]` (rotate across the `ready`
+  ones), `from_name`, `reply_to`, `variants`, `cohorts`.
 
 ## Pre-send gates (instructions you enforce, not code)
 
@@ -23,12 +23,18 @@ exactly the subject and body it is given.
    the primary domain).
 2. The body already contains the CAN-SPAM footer (a real postal address and a
    working unsubscribe line). If the client has not provided those, do not send.
-3. `from_addresses` is non-empty and is NOT the client's primary domain. If
-   empty (NEEDS-FROM-AVI), STOP — no cold domain is provisioned.
+3. At least one `sending.domains[]` entry has `warmup_status == "ready"` and is
+   NOT the client's primary domain. If none are `ready` (NEEDS-FROM-AVI / still
+   warming), STOP — sending from an unwarmed domain torches deliverability.
 
 ## Procedure
 
-1. **Pick** the next `from` address (rotate across `from_addresses` for spread).
+1. **Pick** the next `from` address: choose a `ready` domain (respecting its
+   `daily_cap`), then rotate across that domain's `from_addresses` for spread.
+   ```bash
+   jq -r '.sending.domains[] | select(.warmup_status=="ready") | .from_addresses[]' \
+     $JW_CLIENT_DIR/client.json   # the eligible identities to rotate
+   ```
 2. **Send + record** (CONNECTOR — real SMTP):
    ```bash
    jwout send \

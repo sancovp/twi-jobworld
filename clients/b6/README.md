@@ -21,7 +21,7 @@ from b6studios.com.
 
 ## Open items — `NEEDS-FROM-AVI` (the engine cannot run a live B6 send until these land)
 
-1. **Cold sending domains** (warmed, separate from b6studios.com) → `client.json.from_addresses`
+1. **Cold sending domains** (warmed, separate from b6studios.com) → `client.json.sending.domains[]` (each with `warmup_status`)
 2. **Monitored reply inbox** on the cold domain → `client.json.reply_to`
 3. **Mason + Weston calendar link** → `client.json.calendar_url`
 4. **Approved facts/stats** (or confirmation to use none) → `assets.md`

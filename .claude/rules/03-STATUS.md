@@ -32,7 +32,7 @@ docker build -f Dockerfile.sdk -t avi-jw:latest .
 
 | Avi provides | goes to | unblocks |
 |---|---|---|
-| cold sending domains (warmed) | `clients/b6/client.json.from_addresses` + `SMTP_*` | live `send` |
+| cold sending domains (warmed) | `client.json.sending.domains[]` (`warmup_status:ready`) + `SMTP_*` | live `send` |
 | monitored reply inbox | `client.json.reply_to` + `IMAP_*` | `reply` / `outreach-replies` |
 | Mason+Weston calendar link | `client.json.calendar_url` | the CTA in copy |
 | approved facts (or "use none") | `clients/b6/assets.md` | stats in copy (else none) |

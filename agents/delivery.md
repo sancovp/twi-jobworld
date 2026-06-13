@@ -27,8 +27,9 @@ wrote.
 
 ## Hard rules (the rule we do not break — SPEC §8)
 
-- Never send from the client's primary domain. `from_addresses` must be the
-  dedicated, warmed cold domains. If empty (NEEDS-FROM-AVI), STOP.
+- Never send from the client's primary domain. Send only from a
+  `sending.domains[]` entry whose `warmup_status` is `ready`. If none are ready
+  (NEEDS-FROM-AVI / still warming), STOP.
 - Every body must carry a real CAN-SPAM footer (postal address + working
   unsubscribe). No footer pieces → no send.
 - Only `jwout send` / `jwout reply` / `jwout track event` are code. Address

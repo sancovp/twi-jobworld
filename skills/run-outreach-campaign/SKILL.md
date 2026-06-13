@@ -15,8 +15,8 @@ runs its own `outreach-*` skill (see `_OUTREACH-SKILLS.md` and
 ## Preconditions (check the client's gates first)
 
 Read `$JW_CLIENT_DIR/client.json` and `README.md`. For a LIVE send, every
-`NEEDS-FROM-<client>` item must be resolved: `from_addresses` (warmed cold
-domains), `reply_to`, `calendar_url`, `host_base_url` (if running the video
+`NEEDS-FROM-<client>` item must be resolved: `sending.domains[]` with at least
+one `warmup_status: ready`, `reply_to`, `calendar_url`, `host_base_url` (if running the video
 variant), the `dedupe/` CSVs, and a CAN-SPAM footer (postal + unsubscribe). If
 any are missing, run in **dry mode** (assemble copy, no live send) and tell the
 client which items are blocking.

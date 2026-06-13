@@ -3,7 +3,7 @@
   "title": "JW outreach $client config",
   "description": "Structured params for one client. Instructions live in the sibling .md files; this file holds only what connector verbs and worker logic consume. Never fabricate values — unknowns are null and documented as NEEDS-FROM-<client>.",
   "type": "object",
-  "required": ["name", "targeting", "from_addresses", "from_name", "reply_to", "calendar_url", "variants", "cohorts", "host_base_url", "env_profile"],
+  "required": ["name", "targeting", "sending", "from_name", "reply_to", "calendar_url", "variants", "cohorts", "host_base_url", "env_profile"],
   "properties": {
     "name": {"type": "string"},
     "targeting": {
@@ -17,7 +17,30 @@
         "notes": {"type": "string"}
       }
     },
-    "from_addresses": {"type": "array", "items": {"type": "string"}, "description": "cold sending identities to rotate"},
+    "sending": {
+      "type": "object",
+      "description": "Cold sending config. A domain is a data object; 'warmed' is the warmup_status field, not a separate kind of thing — its value just takes time/money to reach 'ready'. The deliver step only sends from domains whose warmup_status is 'ready'.",
+      "required": ["domains"],
+      "properties": {
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "warmup_status", "from_addresses"],
+            "properties": {
+              "domain": {"type": "string"},
+              "spf": {"type": "boolean"},
+              "dkim": {"type": "boolean"},
+              "dmarc": {"type": "boolean"},
+              "warmup_status": {"type": "string", "enum": ["not_started", "warming", "ready"]},
+              "warmup_started_at": {"type": ["string", "null"]},
+              "from_addresses": {"type": "array", "items": {"type": "string"}, "description": "identities on this domain to rotate"},
+              "daily_cap": {"type": ["integer", "null"]}
+            }
+          }
+        }
+      }
+    },
     "from_name": {"type": "string"},
     "reply_to": {"type": ["string", "null"]},
     "calendar_url": {"type": ["string", "null"]},

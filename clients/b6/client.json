@@ -8,7 +8,9 @@
     "domains": [],
     "notes": "Consumer-facing brands ~$20M+ revenue that already make content or obviously should, with a product/world a short-form series could be built around. Match the ask to seniority: director level and above; never aim a six-figure concept at a coordinator."
   },
-  "from_addresses": [],
+  "sending": {
+    "domains": []
+  },
   "from_name": "Mason Collins",
   "reply_to": null,
   "calendar_url": null,
@@ -22,7 +24,7 @@
   "host_base_url": null,
   "env_profile": "b6",
   "_needs_from_avi": {
-    "from_addresses": "dedicated cold sending domains, warmed, separate from b6studios.com (SPEC §8). NEVER send from b6studios.com / mason@b6studios.com.",
+    "sending.domains": "one or more cold sending-domain objects {domain, spf, dkim, dmarc, warmup_status, from_addresses, daily_cap}, separate from b6studios.com (SPEC §8). NEVER send from b6studios.com / mason@b6studios.com. The deliver step only sends from a domain whose warmup_status is 'ready' — warming is a ~2-4 week field-value change, not a missing capability.",
     "reply_to": "a monitored reply inbox on the cold domain (SPEC §8 reply routing).",
     "calendar_url": "the Mason + Weston 15-min booking link (SPEC §7 step 7).",
     "success": "target booked-meeting rate and a defensible max cost per meeting, defined up front (SPEC §9).",
