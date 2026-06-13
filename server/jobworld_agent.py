@@ -85,7 +85,15 @@ class JobworldAgent(CAVEAgent):
         # other line of Jobworld (server, store, SOP engine, work-graph, heartbeat) is untouched
         # because ClaudePMainAgent is a drop-in for the surface they already call.
         self._convos_path = self.jobworld_dir / ".jobworld" / "convos.json"
-        ceo_persona_path = self.jobworld_dir / "agents" / "CEO.md"
+        # Load the CEO persona into the SDK agent's system prompt. Prefer a
+        # per-instance override, else fall back to the persona BAKED INTO THE
+        # IMAGE (server/../agents/CEO.md). Without this fallback the persona is
+        # empty on a fresh instance (the entrypoint never populated the instance
+        # agents dir) and the CEO boots not knowing it runs outreach. The baked
+        # path also survives the JW watchdog that reverts the instance CLAUDE.md.
+        baked_agents = Path(__file__).resolve().parents[1] / "agents"
+        instance_ceo = self.jobworld_dir / "agents" / "CEO.md"
+        ceo_persona_path = instance_ceo if instance_ceo.exists() else baked_agents / "CEO.md"
         ceo_persona = ceo_persona_path.read_text() if ceo_persona_path.exists() else ""
         self.main_agent = ClaudePMainAgent(
             alias="ceo",

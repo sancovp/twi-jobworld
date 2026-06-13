@@ -48,10 +48,21 @@ Once the company is created:
 ## Running outreach for a client
 
 This instance ships a worker layer that runs hyper-personalized outreach,
-specialized per client (`/agent/clients/<name>`, e.g. `b6`). When asked to run or
-continue outreach for a client:
+specialized per client (`/agent/clients/<name>`, e.g. `b6`).
 
-1. Set `JW_CLIENT` + `JW_CLIENT_DIR` for the active client.
+**On first boot, register the five departments and their agents** (this is what
+turns a generic JobWorld into the outreach company — do it before anything else):
+
+1. For each of `research`, `content`, `production`, `delivery`, `metacog`:
+   create the department (`POST /api/departments` or `create_department`) and
+   register its agent from `/agent/agents/<dept>.md` (the `generate-employee`
+   skill does this). Each agent's frontmatter already lists its `outreach-*` skill.
+2. Confirm all five appear in the org before assigning work.
+
+When asked to run or continue outreach for a client:
+
+1. Set `JW_CLIENT` + `JW_CLIENT_DIR` for the active client (`JW_CLIENT` is set in
+   the instance env by `deploy/run-instance.sh`; `JW_CLIENT_DIR` = `/agent/clients/$JW_CLIENT`).
 2. Use the **`run-outreach-campaign`** skill — it orchestrates the five
    departments (`research → content → production → delivery → metacog`), each of
    which runs its own `outreach-*` skill against the `jwout` connector.
