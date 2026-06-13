@@ -20,6 +20,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | `send` | SMTP delivery | `SMTP_HOST/PORT/USER/PASS`, `SMTP_STARTTLS` | ✅ ran against local SMTP |
 | `track` | write DB; record events; report | `JWOUT_DB` | ✅ ran (event + report) |
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
+| `serve` | HTTP-serve hosted assets; record a `view` per unique-path GET | `HOST_DIR`, `JWOUT_DB` | ✅ ran (200 serve, view recorded, traversal blocked) |
 | `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
 
 ## Usage
@@ -32,6 +33,7 @@ jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --fr
              [--brand B --touch 1 --variant video --cohort engine --asset-url URL] [--no-record]
 jwout track  event <send_id> delivered|open|click|view|reply|booked|bounced
 jwout track  report [--cost 0.50]
+jwout serve  [--host 0.0.0.0] [--port 8000] [--docroot DIR]   # long-running; GET /<uid>/<file> -> view event
 jwout reply  [--folder INBOX] [--all] [--limit 50] [--json]
 ```
 
@@ -43,8 +45,9 @@ to stdout so a worker can capture it; failures raise (non-zero exit).
 ```mermaid
 flowchart LR
   PULL[pull] -->|contacts| DB[(SQLite)]
-  VID[video] -->|file| HOST[host] -->|unique URL| ASSET
+  VID[video] -->|file| HOST[host] -->|unique URL on send.asset_url| DB
   SEND[send] -->|SMTP| MX[mailserver] ; SEND -->|record| DB
+  SERVE[serve] -->|GET /uid/file| VIEW[view event] --> DB
   REPLY[reply] -->|IMAP| DB
   TRACK[track event/report] --> DB
 ```
@@ -64,8 +67,10 @@ flowchart LR
 - `send` cold side → a real SMTP host on dedicated, warmed domains
   (the mailserver decision: Stalwart / docker-mailserver). Warmup + inbox
   rotation + caps are operational concerns layered on top, not connector code.
-- `host` view-tracking → the static server fronting `HOST_DIR` must log GETs on
-  the unique path and feed them back as `jwout track event <id> view`.
+- `host` view-tracking → provided by `jwout serve` (serves `HOST_DIR`, records a
+  `view` per unique-path GET). Run it behind TLS on the asset domain. Open/click
+  tracking on the *email* still needs an ESP pixel / link-rewrite — that part is
+  ESP-dependent and not yet built.
 
 ## Module map
 

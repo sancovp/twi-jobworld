@@ -1,4 +1,4 @@
-"""The universal JW outreach CLI — six external-effect verbs.
+"""The universal JW outreach CLI — external-effect verbs only.
 
     jwout pull   --titles a,b --seniorities director,vp --status verified --domains x.com,y.com --limit N
     jwout video  "<prompt>" --out teaser.mp4 [--model M]
@@ -7,6 +7,7 @@
     jwout track  event <send_id> <type>
     jwout track  report [--cost FLOAT]
     jwout host   <file> [--uid UID]
+    jwout serve  [--host H] [--port N] [--docroot D]   (serves hosted assets; GET /<uid>/<file> records a view)
     jwout reply  [--folder INBOX] [--all] [--limit N] [--json]
 
 Every verb does something the LLM cannot do by emitting tokens. Copy, rules,
@@ -18,7 +19,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import db, host, reply, send, source, video
+from . import db, host, reply, send, serve, source, video
 
 
 def _split(s: str) -> list[str]:
@@ -88,6 +89,12 @@ def cmd_track_report(args):
 
 def cmd_host(args):
     print(host.host_file(args.file, uid=args.uid or None))
+
+
+# ---- serve -----------------------------------------------------------------
+
+def cmd_serve(args):
+    serve.serve(host=args.host, port=args.port, docroot=args.docroot or None)
 
 
 # ---- reply ----------------------------------------------------------------
@@ -163,6 +170,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("file")
     p.add_argument("--uid", default="")
     p.set_defaults(func=cmd_host)
+
+    p = top.add_parser("serve", help="serve hosted assets; record a view per unique-path GET")
+    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--docroot", default="")
+    p.set_defaults(func=cmd_serve)
 
     p = top.add_parser("reply", help="read replies over IMAP")
     p.add_argument("--folder", default="INBOX")

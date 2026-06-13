@@ -70,7 +70,7 @@ flowchart TB
     DLV["outreach-deliver"]; RPL["outreach-replies"]; RPT["outreach-report"]
   end
   subgraph conn["connectors/ (CODE — external effects)"]
-    OUT["outreach (jwout): pull·video·send·track·host·reply"]
+    OUT["outreach (jwout): pull·video·send·track·host·serve·reply"]
   end
   subgraph ext["EXTERNAL SYSTEMS"]
     APOLLO["Apollo API"]; MINIMAX["MiniMax video"]; SMTP["SMTP / cold mailserver"]

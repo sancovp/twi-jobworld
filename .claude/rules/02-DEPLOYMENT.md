@@ -46,11 +46,13 @@ loose `skills/_OUTREACH-SKILLS.md` rule is correctly skipped.
 `HOST_DIR` / `HOST_BASE_URL`. Never commit real secrets; `deploy/secrets.*.env`
 is gitignored (only `secrets.example.env` is tracked).
 
-## What is still infra, not image (the honest gaps)
+## What is still infra/verification, not image (the honest gaps)
 
 - A real **cold SMTP host** on warmed dedicated domains (the mailserver decision).
-- The **static server** fronting `HOST_DIR` that logs teaser-link GETs back as
-  `jwout track event <id> view`.
+- Run **`jwout serve`** behind TLS on the asset domain (view-tracking is now code,
+  not a gap; it just needs to be running and reachable).
+- **Open/click** tracking on the email itself needs an ESP pixel / link-rewrite —
+  ESP-dependent, not yet built (view-tracking on the teaser link IS built).
 - Verified **Apollo** field names and **MiniMax video** endpoints (see
   `connectors/outreach/README.md`).
 These are provisioning/verification, gated on client sign-off — not more code.
