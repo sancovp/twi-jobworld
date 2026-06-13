@@ -25,12 +25,8 @@ _UID_RE = re.compile(r"^/([0-9a-f]{6,})/")
 _CLICK_RE = re.compile(r"^/c/([A-Za-z0-9._-]+)$")
 
 
-def _connect(db_path):
-    return db.connect(Path(db_path)) if db_path else db.connect()
-
-
-def _record_view(uid: str, db_path=None) -> None:
-    conn = _connect(db_path)
+def _record_view(uid: str) -> None:
+    conn = db.connect()
     row = conn.execute(
         "SELECT id FROM sends WHERE asset_url LIKE ? ORDER BY id DESC LIMIT 1",
         (f"%/{uid}/%",),
@@ -39,8 +35,8 @@ def _record_view(uid: str, db_path=None) -> None:
         db.record_event(conn, row[0], "view")
 
 
-def _record_click(token: str, db_path=None) -> None:
-    conn = _connect(db_path)
+def _record_click(token: str) -> None:
+    conn = db.connect()
     row = conn.execute(
         "SELECT id FROM sends WHERE click_token=? ORDER BY id DESC LIMIT 1",
         (token,),
@@ -49,7 +45,7 @@ def _record_click(token: str, db_path=None) -> None:
         db.record_event(conn, row[0], "click")
 
 
-def make_handler(docroot: Path, db_path=None):
+def make_handler(docroot: Path):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):  # quiet; events go to the DB
             pass
@@ -63,7 +59,7 @@ def make_handler(docroot: Path, db_path=None):
             if cm:
                 dest = (parse_qs(split.query).get("u") or [""])[0]
                 try:
-                    _record_click(cm.group(1), db_path)
+                    _record_click(cm.group(1))
                 except Exception:
                     pass
                 if dest.startswith("http://") or dest.startswith("https://"):
@@ -74,18 +70,12 @@ def make_handler(docroot: Path, db_path=None):
             m = _UID_RE.match(self.path)
             rel = self.path.lstrip("/").split("?", 1)[0]
             target = (docroot / rel).resolve()
-            # path traversal guard: target must be strictly inside docroot.
-            # relative_to raises if it isn't — robust where a startswith prefix
-            # compare is not (a sibling dir sharing a name prefix would pass).
-            try:
-                target.relative_to(docroot)
-            except ValueError:
-                self.send_response(404); self.end_headers(); return
-            if not target.is_file():
+            # path traversal guard: must stay under docroot
+            if not str(target).startswith(str(docroot.resolve())) or not target.is_file():
                 self.send_response(404); self.end_headers(); return
             if m:
                 try:
-                    _record_view(m.group(1), db_path)
+                    _record_view(m.group(1))
                 except Exception:
                     pass  # never let tracking break delivery of the asset
             data = target.read_bytes()
@@ -97,10 +87,9 @@ def make_handler(docroot: Path, db_path=None):
     return Handler
 
 
-def serve(host: str = "0.0.0.0", port: int = 8000, docroot: str | None = None,
-          db_path: str | None = None) -> None:
+def serve(host: str = "0.0.0.0", port: int = 8000, docroot: str | None = None) -> None:
     root = Path(docroot or os.environ.get("HOST_DIR", "data/hosted")).resolve()
     root.mkdir(parents=True, exist_ok=True)
-    httpd = ThreadingHTTPServer((host, port), make_handler(root, db_path))
+    httpd = ThreadingHTTPServer((host, port), make_handler(root))
     print(f"serving {root} on {host}:{port} (GET /<uid>/<file> records a view)")
     httpd.serve_forever()

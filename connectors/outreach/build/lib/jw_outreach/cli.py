@@ -104,8 +104,7 @@ def cmd_host(args):
 # ---- serve -----------------------------------------------------------------
 
 def cmd_serve(args):
-    serve.serve(host=args.host, port=args.port, docroot=args.docroot or None,
-                db_path=args.db or None)
+    serve.serve(host=args.host, port=args.port, docroot=args.docroot or None)
 
 
 # ---- reply ----------------------------------------------------------------
@@ -192,7 +191,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--docroot", default="")
-    _add_db(p)
     p.set_defaults(func=cmd_serve)
 
     p = top.add_parser("reply", help="read replies over IMAP")
