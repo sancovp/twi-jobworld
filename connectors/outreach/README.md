@@ -1,0 +1,73 @@
+# `connectors/outreach` — the `jwout` connector
+
+The universal outreach connector. Six external-effect verbs and nothing else.
+No copy logic, no rules engine, no templates — those are instructions the LLM
+applies from a `clients/` config. (See `../../.claude/rules/00-WORKER-LAYER-ARCHITECTURE.md`.)
+
+## Install
+
+```bash
+cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
+# gives the `jwout` console script
+```
+
+## The six verbs
+
+| verb | external effect | key env vars | run-verified? |
+|---|---|---|---|
+| `pull` | Apollo people search → contacts in DB | `APOLLO_API_KEY` | client real; needs key |
+| `video` | MiniMax video gen (create→poll→download) | `MINIMAX_API_KEY`, `MINIMAX_BASE_URL`, `MINIMAX_VIDEO_MODEL` | client real; needs key |
+| `send` | SMTP delivery | `SMTP_HOST/PORT/USER/PASS`, `SMTP_STARTTLS` | ✅ ran against local SMTP |
+| `track` | write DB; record events; report | `JWOUT_DB` | ✅ ran (event + report) |
+| `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
+| `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
+
+## Usage
+
+```bash
+jwout pull   --titles "CMO,VP Marketing" --seniorities director,vp --status verified --domains acme.com --limit 25
+jwout video  "9s teaser: <prompt>" --out teaser.mp4 [--model MiniMax-Hailuo-02]
+jwout host   teaser.mp4                       # → https://<base>/<uid>/teaser.mp4
+jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --from-name "Name" \
+             [--brand B --touch 1 --variant video --cohort engine --asset-url URL] [--no-record]
+jwout track  event <send_id> delivered|open|click|view|reply|booked|bounced
+jwout track  report [--cost 0.50]
+jwout reply  [--folder INBOX] [--all] [--limit 50] [--json]
+```
+
+Exit/return contract: verbs print their result (URL, `send_id=N`, report text)
+to stdout so a worker can capture it; failures raise (non-zero exit).
+
+## Data flow
+
+```mermaid
+flowchart LR
+  PULL[pull] -->|contacts| DB[(SQLite)]
+  VID[video] -->|file| HOST[host] -->|unique URL| ASSET
+  SEND[send] -->|SMTP| MX[mailserver] ; SEND -->|record| DB
+  REPLY[reply] -->|IMAP| DB
+  TRACK[track event/report] --> DB
+```
+
+## NOT verified — confirm before trusting (do not paper over)
+
+- **Apollo field names** (`source.py`): query + response field names follow the
+  documented pattern but were not confirmed against a live call. Verify against
+  https://docs.apollo.io before the first paid pull.
+- **MiniMax video endpoints** (`video.py`): `/v1/video_generation`,
+  `/v1/query/video_generation`, `/v1/files/retrieve`, status string `Success`,
+  default model `MiniMax-Hailuo-02` — confirm against current MiniMax docs
+  before the first paid generation.
+
+## Deployment infra these verbs assume (NOT code — provisioning)
+
+- `send` cold side → a real SMTP host on dedicated, warmed domains
+  (the mailserver decision: Stalwart / docker-mailserver). Warmup + inbox
+  rotation + caps are operational concerns layered on top, not connector code.
+- `host` view-tracking → the static server fronting `HOST_DIR` must log GETs on
+  the unique path and feed them back as `jwout track event <id> view`.
+
+## Module map
+
+`cli.py` (verb wiring) → `source.py` (pull) · `video.py` · `send.py` ·
+`db.py` (track + persisted state) · `host.py` · `reply.py` · `models.py` (Contact).

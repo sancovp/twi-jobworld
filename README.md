@@ -29,6 +29,25 @@ A complete company with:
 
 You are the CEO. You coordinate. The agents execute.
 
+## Worker Layer (outreach, specialized per client)
+
+On top of the JW base, this fork ships a **worker layer** that runs
+hyper-personalized cold outreach, specialized per client. Three layers, one law:
+
+- **Connectors** (`connectors/`) — the ONLY code: external-effect verbs. The
+  `outreach` connector (`jwout`) has six: `pull · video · send · track · host · reply`.
+- **Skills** (`skills/outreach-*`, `run-outreach-campaign`) — worker procedures
+  that compose connector verbs with client instructions.
+- **Clients** (`clients/<name>`) — the `$client` config: template, rules,
+  positioning, assets, dedupe lists. **B6 is one instance.**
+
+> The one law: a thing is code only if it MUST execute (external system / effect
+> / state). Templates, copy rules, and dedupe lists are instructions handed to
+> the LLM — never a string linter.
+
+Departments: `research → content → production → delivery → metacog`. Full
+architecture, diagrams, and deployment: see `.claude/rules/00`, `01`, `02`.
+
 ## Getting Started
 
 ```bash

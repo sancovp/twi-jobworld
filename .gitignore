@@ -27,3 +27,13 @@ Thumbs.db
 
 # Exception: instantiate-jobworld skill (not a compiled jobworld)
 !skills/instantiate-jobworld/
+
+# Worker layer — secrets, venvs, build artifacts, run state (NEVER commit real creds)
+deploy/secrets*.env
+!deploy/secrets.example.env
+**/.venv/
+**/__pycache__/
+*.pyc
+**/*.egg-info/
+**/data/
+*.db

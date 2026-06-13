@@ -20,6 +20,10 @@ from cave.core.blockage_store import BlockageStore
 from cave.core.config import CAVEConfig
 from cave.core.models import MainAgentConfig
 
+# The PromptWorld SDK-CEO pattern: a claude_agent_sdk-backed main_agent (drop-in for the tmux
+# CodeAgent surface). p_main_agent.py + convo_registry.py are copied VERBATIM from PromptWorld.
+from p_main_agent import ClaudePMainAgent
+
 logger = logging.getLogger(__name__)
 
 # Business domain enum — general business function buckets
@@ -72,6 +76,28 @@ class JobworldAgent(CAVEAgent):
 
         self._load_data()
         super().__init__(config=config)
+
+        # === THE PROMPTWORLD PATTERN, AND NOTHING ELSE ===
+        # super().__init__ attached a tmux ClaudeCodeAgent as self.main_agent. Replace it with a
+        # claude_agent_sdk-backed ClaudePMainAgent — identical method surface (session_exists/
+        # create_session/send_keys/capture_pane/send_and_wait), runs the SDK headless on MiniMax,
+        # NO tmux. This is the exact swap PromptWorld does at promptworld_agent.py:111-140; every
+        # other line of Jobworld (server, store, SOP engine, work-graph, heartbeat) is untouched
+        # because ClaudePMainAgent is a drop-in for the surface they already call.
+        self._convos_path = self.jobworld_dir / ".jobworld" / "convos.json"
+        ceo_persona_path = self.jobworld_dir / "agents" / "CEO.md"
+        ceo_persona = ceo_persona_path.read_text() if ceo_persona_path.exists() else ""
+        self.main_agent = ClaudePMainAgent(
+            alias="ceo",
+            cwd=str(self.jobworld_dir),
+            registry_path=str(self._convos_path),
+            append_system_prompt=ceo_persona,
+            plugins=[],  # JW does not use PromptWorld's doc-mirror; its auto-discover
+                         # (_doc_mirror_plugin_root) assumes PW's deep monorepo path and
+                         # IndexErrors at this layout. [] = skip it. (Found by running.)
+        )
+        self.main_agent.create_session()
+
         self._wire_ceo_heartbeat()
 
         logger.info(

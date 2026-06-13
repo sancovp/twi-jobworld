@@ -1,0 +1,29 @@
+# Avi_Jobworld = JW fork with the CEO swapped to the Claude Code SDK (PromptWorld pattern).
+# Built ON JW's own image (full cave stack + JW server + ink-ceo). Additions only:
+#   1. claude_agent_sdk + mcp (PW's verified pins — pydantic stays 2.10.6, no cascade)
+#   2. the 3 transplant files: patched jobworld_agent.py + p_main_agent.py + convo_registry.py
+#   3. a wrapper entrypoint that runs JW's OWN entrypoint as the non-root `ceo` user with HOME,
+#      because the SDK CEO's `claude --dangerously-skip-permissions` cannot run as root.
+#   4. the worker layer: the `jwout` outreach connector (installed), client configs, and
+#      department agents (see .claude/rules/00-WORKER-LAYER-ARCHITECTURE.md).
+FROM jobworld-cave:latest
+USER root
+RUN pip install --no-cache-dir 'mcp==1.12.4' 'claude-agent-sdk==0.1.19'
+COPY server/jobworld_agent.py /agent/server/jobworld_agent.py
+COPY p_main_agent.py /agent/p_main_agent.py
+COPY convo_registry.py /agent/convo_registry.py
+# --- worker layer: connectors (CODE) + clients ($content) + department agents ---
+# The outreach connector installs the `jwout` console script onto PATH for workers.
+# clients/ and agents/ are read at run time; skills/ already flow into each instance
+# via the entrypoint's skill-copy loop. See .claude/rules/02-DEPLOYMENT.md.
+COPY connectors/ /agent/connectors/
+COPY clients/ /agent/clients/
+COPY agents/ /agent/agents/
+# Merge the outreach-* worker skills into /agent/skills so the entrypoint's
+# skill-copy loop installs them into every instance (COPY adds, never deletes
+# the base image's skills like blast-outreach).
+COPY skills/ /agent/skills/
+RUN pip install --no-cache-dir /agent/connectors/outreach
+COPY deploy/entrypoint-sdk.sh /usr/local/bin/entrypoint-sdk.sh
+RUN chmod +x /usr/local/bin/entrypoint-sdk.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint-sdk.sh"]

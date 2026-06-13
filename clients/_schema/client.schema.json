@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JW outreach $client config",
+  "description": "Structured params for one client. Instructions live in the sibling .md files; this file holds only what connector verbs and worker logic consume. Never fabricate values — unknowns are null and documented as NEEDS-FROM-<client>.",
+  "type": "object",
+  "required": ["name", "targeting", "from_addresses", "from_name", "reply_to", "calendar_url", "variants", "cohorts", "host_base_url", "env_profile"],
+  "properties": {
+    "name": {"type": "string"},
+    "targeting": {
+      "type": "object",
+      "required": ["titles", "seniorities", "email_statuses"],
+      "properties": {
+        "titles": {"type": "array", "items": {"type": "string"}},
+        "seniorities": {"type": "array", "items": {"type": "string"}},
+        "email_statuses": {"type": "array", "items": {"type": "string"}},
+        "domains": {"type": "array", "items": {"type": "string"}},
+        "notes": {"type": "string"}
+      }
+    },
+    "from_addresses": {"type": "array", "items": {"type": "string"}, "description": "cold sending identities to rotate"},
+    "from_name": {"type": "string"},
+    "reply_to": {"type": ["string", "null"]},
+    "calendar_url": {"type": ["string", "null"]},
+    "variants": {"type": "array", "items": {"type": "string"}},
+    "cohorts": {"type": "array", "items": {"type": "string"}},
+    "cost_per_send_usd": {"type": ["number", "null"]},
+    "success": {
+      "type": "object",
+      "properties": {
+        "target_booked_rate": {"type": ["number", "null"]},
+        "max_cost_per_meeting_usd": {"type": ["number", "null"]}
+      }
+    },
+    "host_base_url": {"type": ["string", "null"]},
+    "env_profile": {"type": "string", "description": "which secret bundle (SMTP/IMAP/API keys) deployment loads for this client"}
+  }
+}
