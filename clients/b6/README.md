@@ -29,6 +29,7 @@ from b6studios.com.
 6. **Success thresholds** (target booked rate, max cost/meeting) → `client.json.success`
 7. **Tracked-link host domain** → `client.json.host_base_url`
 8. **The three dedupe CSVs** → `dedupe/`
+9. **CAN-SPAM footer** (a real postal address + a working unsubscribe URL) → `client.json.compliance`. `outreach-write` appends it to every body; `outreach-deliver` refuses to send without it.
 
 Source of these requirements: `~/b6-outreach-engine/SPEC.md` (§8, §9, §10) and
 `NEEDS-FROM-AVI.md`. Do not fabricate any of them.

@@ -55,6 +55,14 @@
       }
     },
     "host_base_url": {"type": ["string", "null"]},
+    "compliance": {
+      "type": "object",
+      "description": "CAN-SPAM footer pieces. outreach-write appends these to every body; outreach-deliver gates on them. A live send is blocked until both are non-null.",
+      "properties": {
+        "postal_address": {"type": ["string", "null"], "description": "a real physical mailing address (CAN-SPAM requires one)"},
+        "unsubscribe_url": {"type": ["string", "null"], "description": "a working unsubscribe link"}
+      }
+    },
     "env_profile": {"type": "string", "description": "which secret bundle (SMTP/IMAP/API keys) deployment loads for this client"}
   }
 }

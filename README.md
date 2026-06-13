@@ -50,7 +50,7 @@ flowchart TB
   class conn,OUT code; class client,SCHEMA,B6 content
 ```
 
-**The bijection** — every concept appears in all three columns, and the columns interlock. (The full set of 17 component & sequence diagrams lives in [`.claude/rules/`](.claude/rules) and [`connectors/outreach/FLOWS.md`](connectors/outreach/FLOWS.md).)
+**The bijection** — every concept appears in all three columns, and the columns interlock. (The full set of 15 component & sequence diagrams lives in [`.claude/rules/`](.claude/rules) and [`connectors/outreach/FLOWS.md`](connectors/outreach/FLOWS.md).)
 
 | GENERAL (the process) | SPECIFIC (B6 instance) | CODE (what executes) |
 |---|---|---|

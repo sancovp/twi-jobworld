@@ -36,11 +36,21 @@ You are the generator AND the linter — the rules are instructions, not code.
    `${HOST_BASE_URL}/c/<token>?u=<calendar_url>`. Use that tracked URL in the
    body wherever the calendar CTA appears. (If `HOST_BASE_URL` is not set, use the
    raw calendar link and skip the token — clicks just won't be tracked.)
-5. **Self-check (you are the linter):** re-read the hard rules and verify the
+5. **Append the CAN-SPAM footer** from `client.json.compliance`: a blank line,
+   then the client's `postal_address`, then an unsubscribe line pointing at
+   `unsubscribe_url`. Both are legally required on cold mail. If either is null
+   (NEEDS-FROM-<client>), DO NOT fabricate one — leave the body without a footer;
+   the deliver step will correctly refuse to send it. Example footer:
+   ```
+   <blank line>
+   B6 Studios, <postal_address>
+   Unsubscribe: <unsubscribe_url>
+   ```
+6. **Self-check (you are the linter):** re-read the hard rules and verify the
    draft obeys all of them (length, no em/en dashes, no emojis, no fake urgency,
-   approved facts only, email-on-line-1, custom subject naming the brand). Fix
-   in place. Do NOT call any tool to do this.
-6. **Emit** the subject on the first line and the body after, written to
+   approved facts only, email-on-line-1, custom subject naming the brand, **and
+   the CAN-SPAM footer is present**). Fix in place. Do NOT call any tool to do this.
+7. **Emit** the subject on the first line and the body after, written to
    `copy/<contact-email>.touch<touch>.txt`; the video prompt (if any) to
    `copy/<contact-email>.touch<touch>.vprompt.txt`; and the click token (if
    minted) to `copy/<contact-email>.touch<touch>.token` for the deliver step.

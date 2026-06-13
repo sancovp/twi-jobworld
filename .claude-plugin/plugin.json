@@ -1,10 +1,10 @@
 {
-  "name": "twi-jobworld",
-  "version": "1.0.0",
-  "description": "Instantiate a TWI Jobworld — AI-powered company with agents that run themselves. Enable this plugin and a CEO agent spawns, ready to bootstrap your company.",
+  "name": "avi-jw",
+  "version": "1.1.0",
+  "description": "Avi-JW — a JobWorld (SDK-CEO fork of TWI Jobworld) with a worker layer that runs cold outreach, specialized per client by config. Departments drive the jwout connector.",
   "author": "Stillpoint Media",
-  "homepage": "https://github.com/stillpoint-ai/twi-jobworld",
+  "homepage": "https://github.com/sancovp/twi-jobworld",
   "license": "MIT",
   "categories": ["business", "automation", "agents"],
-  "keywords": ["jobworld", "ai-agents", "company", "bootstrap", "stillpoint"]
+  "keywords": ["jobworld", "ai-agents", "outreach", "connector", "avi-jw", "stillpoint"]
 }

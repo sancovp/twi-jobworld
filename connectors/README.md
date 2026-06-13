@@ -27,7 +27,7 @@ string, stop — that belongs in a skill's instructions, not in code.
 
 | connector | command | verbs | external systems |
 |---|---|---|---|
-| `outreach/` | `jwout` | pull · video · send · track · host · reply | Apollo, MiniMax, SMTP, IMAP, static host, SQLite |
+| `outreach/` | `jwout` | pull · video · send · track · host · serve · reply | Apollo, MiniMax, SMTP, IMAP, static host, SQLite |
 
 ## Adding a connector
 

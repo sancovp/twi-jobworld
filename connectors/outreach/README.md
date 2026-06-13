@@ -1,6 +1,6 @@
 # `connectors/outreach` — the `jwout` connector
 
-The universal outreach connector. Six external-effect verbs and nothing else.
+The universal outreach connector. Seven external-effect verbs and nothing else.
 No copy logic, no rules engine, no templates — those are instructions the LLM
 applies from a `clients/` config. (See `../../.claude/rules/00-WORKER-LAYER-ARCHITECTURE.md`.)
 
@@ -11,7 +11,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 # gives the `jwout` console script
 ```
 
-## The six verbs
+## The seven verbs
 
 | verb | external effect | key env vars | run-verified? |
 |---|---|---|---|

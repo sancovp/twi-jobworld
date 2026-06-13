@@ -34,7 +34,7 @@ CLIENT ($content)   ── instructions: template, rules, positioning, assets, d
 SKILL (procedure)   ── tells a worker: which CONNECTOR verbs to run, in what order, applying which CLIENT instructions
       │  calls
       ▼
-CONNECTOR (code)    ── the ONLY functions: external-effect verbs (pull · video · send · track · host · reply)
+CONNECTOR (code)    ── the ONLY functions: external-effect verbs (pull · video · send · track · host · serve · reply)
 ```
 
 - **CONNECTOR** = code, external effects only. Lives in `connectors/`.
@@ -141,7 +141,7 @@ sequenceDiagram
 |---|---|---|
 | `~/avi-jw/` | the deliverable (JW fork, SDK CEO done) | this file |
 | `~/avi-jw/connectors/` | CODE — external-effect connectors | `connectors/README.md` |
-| `~/avi-jw/connectors/outreach/` | the outreach connector (`jwout`, 6 verbs) | `connectors/outreach/README.md` |
+| `~/avi-jw/connectors/outreach/` | the outreach connector (`jwout`, 7 verbs) | `connectors/outreach/README.md` |
 | `~/avi-jw/skills/` | PROCEDURES — worker skills | `skills/_OUTREACH-SKILLS.md` |
 | `~/avi-jw/clients/` | CONTENT — `$client` configs | `clients/README.md` |
 | `~/avi-jw/clients/_schema/` | the `$client` contract | `clients/_schema/README.md` |
