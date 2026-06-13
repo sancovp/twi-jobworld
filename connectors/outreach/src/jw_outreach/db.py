@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS sends (
     subject TEXT, body TEXT,
     touch INTEGER, variant TEXT, cohort TEXT,
     asset_url TEXT,
+    click_token TEXT,
     sent_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS events (
@@ -70,11 +71,12 @@ def load_contacts(conn: sqlite3.Connection) -> list[Contact]:
 
 def record_send(conn: sqlite3.Connection, *, to_email: str, subject: str,
                 body: str, brand: str = "", touch: int = 1,
-                variant: str = "", cohort: str = "", asset_url: str = "") -> int:
+                variant: str = "", cohort: str = "", asset_url: str = "",
+                click_token: str = "") -> int:
     cur = conn.execute(
         "INSERT INTO sends (to_email, brand, subject, body, touch, variant, "
-        "cohort, asset_url) VALUES (?,?,?,?,?,?,?,?)",
-        (to_email, brand, subject, body, touch, variant, cohort, asset_url),
+        "cohort, asset_url, click_token) VALUES (?,?,?,?,?,?,?,?,?)",
+        (to_email, brand, subject, body, touch, variant, cohort, asset_url, click_token),
     )
     conn.commit()
     return cur.lastrowid

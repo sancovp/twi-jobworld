@@ -30,13 +30,20 @@ You are the generator AND the linter — the rules are instructions, not code.
 3. **If `variant == video`,** also write the ~9s teaser generation prompt per the
    video-prompt rules (real brand + real product, matches the scene's show-world,
    navy/chartreuse when branding appears).
-4. **Self-check (you are the linter):** re-read the hard rules and verify the
+4. **Tracked CTA link (for click measurement):** mint a unique token for this
+   contact+touch (any random hex string, e.g. `tok_<12 hex>`). Write the CTA's
+   calendar link as a tracked URL so a click is measurable:
+   `${HOST_BASE_URL}/c/<token>?u=<calendar_url>`. Use that tracked URL in the
+   body wherever the calendar CTA appears. (If `HOST_BASE_URL` is not set, use the
+   raw calendar link and skip the token — clicks just won't be tracked.)
+5. **Self-check (you are the linter):** re-read the hard rules and verify the
    draft obeys all of them (length, no em/en dashes, no emojis, no fake urgency,
    approved facts only, email-on-line-1, custom subject naming the brand). Fix
    in place. Do NOT call any tool to do this.
-5. **Emit** the subject on the first line and the body after, written to
-   `copy/<contact-email>.touch<touch>.txt` for the deliver step; emit the video
-   prompt (if any) to `copy/<contact-email>.touch<touch>.vprompt.txt`.
+6. **Emit** the subject on the first line and the body after, written to
+   `copy/<contact-email>.touch<touch>.txt`; the video prompt (if any) to
+   `copy/<contact-email>.touch<touch>.vprompt.txt`; and the click token (if
+   minted) to `copy/<contact-email>.touch<touch>.token` for the deliver step.
 
 ## Output
 

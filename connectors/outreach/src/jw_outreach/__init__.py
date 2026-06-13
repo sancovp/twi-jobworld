@@ -13,7 +13,7 @@ So this package is only external-effect verbs:
     send    deliver an email over SMTP
     track   write/read the real DB; record sends and events; report
     host    place an asset at a unique URL
-    serve   serve hosted assets; record a view per unique-path GET (closes host->track)
+    serve   serve hosted assets (view per GET) AND redirect tracked links (click); closes host->track
     reply   read replies over IMAP
 
 No string linter. No draft store. No content. A client config supplies the

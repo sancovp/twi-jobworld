@@ -20,7 +20,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | `send` | SMTP delivery | `SMTP_HOST/PORT/USER/PASS`, `SMTP_STARTTLS` | ✅ ran against local SMTP |
 | `track` | write DB; record events; report | `JWOUT_DB` | ✅ ran (event + report) |
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
-| `serve` | HTTP-serve hosted assets; record a `view` per unique-path GET | `HOST_DIR`, `JWOUT_DB` | ✅ ran (200 serve, view recorded, traversal blocked) |
+| `serve` | HTTP-serve assets (`view` per GET) + redirect tracked links (`click`) | `HOST_DIR`, `JWOUT_DB` | ✅ ran (200 serve + view; 302 + click recorded; traversal 404; bad dest 400) |
 | `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
 
 ## Usage
@@ -31,10 +31,11 @@ jwout pull   --titles "CMO,VP Marketing" --seniorities director,vp --status veri
 jwout video  "9s teaser: <prompt>" --out teaser.mp4 [--model MiniMax-Hailuo-02]
 jwout host   teaser.mp4                       # → https://<base>/<uid>/teaser.mp4
 jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --from-name "Name" \
-             [--brand B --touch 1 --variant video --cohort engine --asset-url URL] [--no-record]
+             [--brand B --touch 1 --variant video --cohort engine --asset-url URL --click-token TOK] [--no-record]
+             # --click-token must match the token embedded in the body's tracked links (serve /c/<TOK> -> click)
 jwout track  event <send_id> delivered|open|click|view|reply|booked|bounced
 jwout track  report [--cost 0.50]
-jwout serve  [--host 0.0.0.0] [--port 8000] [--docroot DIR]   # long-running; GET /<uid>/<file> -> view event
+jwout serve  [--host 0.0.0.0] [--port 8000] [--docroot DIR]   # long-running; /<uid>/<file> -> view ; /c/<tok>?u=URL -> click+302
 jwout reply  [--folder INBOX] [--all] [--limit 50] [--json]
 ```
 
@@ -49,6 +50,7 @@ flowchart LR
   VID[video] -->|file| HOST[host] -->|unique URL on send.asset_url| DB
   SEND[send] -->|SMTP| MX[mailserver] ; SEND -->|record| DB
   SERVE[serve] -->|GET /uid/file| VIEW[view event] --> DB
+  SERVE -->|GET /c/token?u=| CLICK[click event + 302] --> DB
   REPLY[reply] -->|IMAP| DB
   TRACK[track event/report] --> DB
 ```

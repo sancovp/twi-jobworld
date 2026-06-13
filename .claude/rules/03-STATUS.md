@@ -7,7 +7,7 @@ Snapshot of where the worker layer stands. Update this whenever state changes.
 | piece | state | how verified |
 |---|---|---|
 | `connectors/outreach` (`jwout`) | 7 verbs | imports clean; in-image |
-| `host` / `send` / `track` / `serve` | ✅ run-verified | ran host (URL), send (local SMTP, send_id), track (events+report), serve (200 + view recorded + traversal 404) |
+| `host` / `send` / `track` / `serve` | ✅ run-verified | host (URL), send (local SMTP, send_id), track (events+report), serve (view 200, click 302+recorded, traversal 404) |
 | `pull` (Apollo search→enrich) | ✅ doc-verified, real client | two-step confirmed vs docs; needs key for live call |
 | `video` (MiniMax) | ✅ doc-verified, real client | endpoints/auth/status/model/body confirmed vs docs; needs key |
 | `reply` (IMAP) | real client | needs creds |
@@ -49,6 +49,7 @@ That is the design: the build is complete; answers fill slots.
 ## Remaining engineering (not blocked on Avi)
 
 - Confirm Apollo `bulk_match` response field names on the first live call.
-- Open/click tracking on the email body (ESP pixel / link-rewrite) — not built;
-  teaser-link view tracking IS built (`serve`).
+- **Open** tracking (an email pixel) — not built (privacy proxies make it noise);
+  **click** tracking IS built (`serve` `/c/<token>` redirect) and **view**
+  tracking IS built (`serve` `/<uid>/<file>`).
 - A real cold mailserver substrate (Stalwart/docker-mailserver) for `send`.

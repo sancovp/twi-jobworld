@@ -17,10 +17,12 @@ import os
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 from . import db
 
 _UID_RE = re.compile(r"^/([0-9a-f]{6,})/")
+_CLICK_RE = re.compile(r"^/c/([A-Za-z0-9._-]+)$")
 
 
 def _record_view(uid: str) -> None:
@@ -33,6 +35,16 @@ def _record_view(uid: str) -> None:
         db.record_event(conn, row[0], "view")
 
 
+def _record_click(token: str) -> None:
+    conn = db.connect()
+    row = conn.execute(
+        "SELECT id FROM sends WHERE click_token=? ORDER BY id DESC LIMIT 1",
+        (token,),
+    ).fetchone()
+    if row:
+        db.record_event(conn, row[0], "click")
+
+
 def make_handler(docroot: Path):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):  # quiet; events go to the DB
@@ -41,6 +53,20 @@ def make_handler(docroot: Path):
         def do_GET(self):
             if self.path == "/health":
                 self.send_response(200); self.end_headers(); self.wfile.write(b"ok"); return
+            # tracked click: /c/<token>?u=<dest> — record a click, 302 to dest
+            split = urlsplit(self.path)
+            cm = _CLICK_RE.match(split.path)
+            if cm:
+                dest = (parse_qs(split.query).get("u") or [""])[0]
+                try:
+                    _record_click(cm.group(1))
+                except Exception:
+                    pass
+                if dest.startswith("http://") or dest.startswith("https://"):
+                    self.send_response(302); self.send_header("Location", dest); self.end_headers()
+                else:
+                    self.send_response(400); self.end_headers()
+                return
             m = _UID_RE.match(self.path)
             rel = self.path.lstrip("/").split("?", 1)[0]
             target = (docroot / rel).resolve()
