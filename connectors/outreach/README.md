@@ -82,4 +82,11 @@ flowchart LR
 ## Module map
 
 `cli.py` (verb wiring) → `source.py` (pull) · `video.py` · `send.py` ·
-`db.py` (track + persisted state) · `host.py` · `reply.py` · `models.py` (Contact).
+`db.py` (track + persisted state) · `host.py` · `serve.py` · `reply.py` ·
+`models.py` (Contact).
+
+## Diagrams
+
+The module **component diagram** and a **sequence diagram for every non-trivial
+verb boundary** (pull two-step, video async, send→record, serve view, serve
+click, reply→classify→track) live in [`FLOWS.md`](FLOWS.md).

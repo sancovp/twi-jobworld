@@ -55,6 +55,34 @@ CONNECTOR (code)    ── the ONLY functions: external-effect verbs (pull · vi
 | read + classify replies | B6 monitored inbox | `jwout reply` + `jwout track event … reply` |
 | measure | B6 success thresholds, cost cap | `jwout track report` |
 
+The same bijection as the three-column diagram (rule 23.4 — every concept appears
+in all three columns; the columns interlock):
+
+```mermaid
+flowchart LR
+  subgraph G["GENERAL — the process"]
+    g1[source decision-makers]; g2[write personalized copy]; g3[make a teaser]
+    g4[deliver + record]; g5[read + classify replies]; g6[measure]
+  end
+  subgraph S["SPECIFIC — B6 instance"]
+    s1["consumer $20M+, director+, titles"]; s2["locked positioning + 4-part anatomy"]
+    s3["show-world + product, navy/chartreuse"]; s4["cold domains, from-addrs, cohorts"]
+    s5["monitored inbox"]; s6["success thresholds, cost cap"]
+  end
+  subgraph C["CODE — what executes"]
+    c1["jwout pull"]; c2["(none — LLM applies instructions)"]; c3["jwout video + host"]
+    c4["jwout send + track"]; c5["jwout reply + track event"]; c6["jwout track report"]
+  end
+  g1 --- s1 --- c1
+  g2 --- s2 --- c2
+  g3 --- s3 --- c3
+  g4 --- s4 --- c4
+  g5 --- s5 --- c5
+  g6 --- s6 --- c6
+  classDef gen fill:#fff3cd,color:#000; classDef spec fill:#48f,color:#fff; classDef code fill:#1b4,color:#fff
+  class g1,g2,g3,g4,g5,g6 gen; class s1,s2,s3,s4,s5,s6 spec; class c1,c2,c3,c4,c5,c6 code
+```
+
 ---
 
 ## Component diagram

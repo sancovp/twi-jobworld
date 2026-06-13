@@ -47,6 +47,28 @@ sequenceDiagram
   MET-->>CEO: funnel + verdict vs success thresholds
 ```
 
+## CEO round + review loop (the orchestration execution boundary)
+
+`run-outreach-campaign` runs inside the JW round/review loop the CEO already
+owns (`ceo-bootstrap`): assign work, let departments execute, review what they
+report as done, decide the next batch.
+
+```mermaid
+sequenceDiagram
+  participant CEO
+  participant API as JW event/review API
+  participant DEPTS as Departments (research..metacog)
+  CEO->>API: read events (what happened last round)
+  CEO->>API: GET /api/tasks/supposedly-done
+  loop each supposedly-done task
+    CEO->>API: POST /api/ceo-review {complete | not_complete}
+  end
+  CEO->>CEO: decide next batch size (metacog verdict + client cost cap)
+  CEO->>DEPTS: assign batch — run-outreach-campaign per contact
+  DEPTS->>API: emit events + report completions
+  Note over CEO,DEPTS: repeat until success thresholds met, cost cap hit, or stop
+```
+
 ## Rules every department agent obeys
 
 - One client at a time: read `JW_CLIENT` / `JW_CLIENT_DIR`; never hard-code content.

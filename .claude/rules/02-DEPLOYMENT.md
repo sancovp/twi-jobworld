@@ -5,14 +5,25 @@
 
 ## Build chain
 
-```
-jobworld-cave:latest  (JW's own image: cave stack + JW server)
-        │  Dockerfile.sdk adds:
-        ▼
-  1. claude_agent_sdk + mcp pins (SDK CEO)
-  2. transplant: jobworld_agent.py + p_main_agent.py + convo_registry.py
-  3. worker layer:  COPY connectors/ clients/ agents/  ;  pip install connectors/outreach  → `jwout` on PATH
-  4. entrypoint-sdk.sh  (drops to non-root `ceo`, sets HOME, runs JW's entrypoint)
+```mermaid
+flowchart TB
+  subgraph base["jobworld-cave:latest (base image)"]
+    CAVE["cave stack + JW server + ink-ceo"]
+  end
+  subgraph sdk["Dockerfile.sdk additions"]
+    PINS["claude_agent_sdk + mcp pins (SDK CEO)"]
+    XPLANT["transplant: jobworld_agent.py + p_main_agent.py + convo_registry.py"]
+    subgraph worker["worker layer"]
+      CONN["connectors/ → pip install → jwout on PATH"]
+      CL["clients/ ($content, read at run time)"]
+      AG["agents/ (CEO + 5 depts)"]
+      SK["skills/ (outreach-* + run-outreach-campaign)"]
+    end
+    EP["entrypoint-sdk.sh (root setup → drop to ceo)"]
+  end
+  base --> sdk
+  classDef b fill:#555,color:#fff; classDef w fill:#1b4,color:#fff
+  class base,CAVE b; class worker,CONN,CL,AG,SK w
 ```
 
 Build: `docker build -f Dockerfile.sdk -t avi-jw:latest .`
@@ -34,6 +45,25 @@ dry if no secrets file is present.
 
 The entrypoint's skill-copy loop iterates `skills/*/` (directories only), so the
 loose `skills/_OUTREACH-SKILLS.md` rule is correctly skipped.
+
+## Entrypoint boot — container start → ready instance (execution boundary)
+
+```mermaid
+sequenceDiagram
+  participant D as docker run / run-instance.sh
+  participant EP as entrypoint-sdk.sh (root)
+  participant JE as entrypoint-jobworld.sh (ceo)
+  participant SRV as JW server
+  participant CEO as SDK CEO (ClaudePMainAgent)
+  D->>EP: start (JOBWORLD_INSTANCE, JW_CLIENT, secret bundle)
+  EP->>EP: mkdir + chown /jobworld_data, /home/ceo
+  EP->>JE: su -m ceo, HOME=/home/ceo, exec JW entrypoint
+  JE->>JE: init instance dir; copy /agent/skills/* → instance .claude/skills
+  JE->>SRV: python -m server --dir INSTANCE --port
+  SRV->>CEO: swap main_agent → ClaudePMainAgent (plugins=[]); create_session()
+  CEO-->>SRV: CEO ready (loads agents/CEO.md persona)
+  Note over CEO: heartbeat + run-outreach-campaign drive the departments
+```
 
 ## Runtime env (per instance / per client)
 
