@@ -8,6 +8,8 @@
 #      department agents (see .claude/rules/00-WORKER-LAYER-ARCHITECTURE.md).
 FROM jobworld-cave:latest
 USER root
+# jq: the outreach skills read client.json with it (shell snippets in skills/outreach-*).
+RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir 'mcp==1.12.4' 'claude-agent-sdk==0.1.19'
 COPY server/jobworld_agent.py /agent/server/jobworld_agent.py
 COPY p_main_agent.py /agent/p_main_agent.py

@@ -29,6 +29,10 @@ flowchart TB
 Build: `docker build -f Dockerfile.sdk -t avi-jw:latest .`
 (`.dockerignore` keeps venvs / __pycache__ / data / *.db out of the context.)
 
+Image deps added on top of the Debian base: **`jq`** (the `outreach-*` skills read
+`client.json` with it) and the SDK pip pins. Verified in-image: `jq` resolves and
+the skills' actual `jq` queries run against `clients/b6/client.json`.
+
 Run: `deploy/run-instance.sh <client> [instance] [port]` — loads
 `deploy/secrets.<client>.env` (gitignored), wires `JW_CLIENT`/`JW_CLIENT_DIR`/
 `JWOUT_DB`, and `docker run`s the image on a named data volume. Warns and runs
