@@ -27,6 +27,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 
 ```bash
 jwout pull   --titles "CMO,VP Marketing" --seniorities director,vp --status verified --domains acme.com --limit 25
+             # two-step: search (free) then bulk_match enrich (credits). --no-enrich = free preview, no emails.
 jwout video  "9s teaser: <prompt>" --out teaser.mp4 [--model MiniMax-Hailuo-02]
 jwout host   teaser.mp4                       # → https://<base>/<uid>/teaser.mp4
 jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --from-name "Name" \
@@ -52,15 +53,19 @@ flowchart LR
   TRACK[track event/report] --> DB
 ```
 
-## NOT verified — confirm before trusting (do not paper over)
+## Verified against docs (2026-06); confirm with one live call before volume
 
-- **Apollo field names** (`source.py`): query + response field names follow the
-  documented pattern but were not confirmed against a live call. Verify against
-  https://docs.apollo.io before the first paid pull.
-- **MiniMax video endpoints** (`video.py`): `/v1/video_generation`,
-  `/v1/query/video_generation`, `/v1/files/retrieve`, status string `Success`,
-  default model `MiniMax-Hailuo-02` — confirm against current MiniMax docs
-  before the first paid generation.
+- **Apollo** (`source.py`): verified the real flow is TWO steps — `POST
+  /api/v1/mixed_people/api_search` (FREE, returns no emails) then `POST
+  /api/v1/people/bulk_match` (<=10/call, COSTS the credit, returns emails). This
+  is now implemented (the earlier single-call design was wrong — search alone
+  yields zero usable contacts). Requires a master API key. The exact
+  bulk_match response field names should be confirmed on the first live call.
+- **MiniMax video** (`video.py`): verified `/v1/video_generation`,
+  `/v1/query/video_generation`, `/v1/files/retrieve`; `Authorization: Bearer`;
+  status `Success`/`Fail`; `file.download_url` (valid 9h); models
+  `MiniMax-Hailuo-02` / `MiniMax-Hailuo-2.3`; body takes `duration` (6|10) and
+  `resolution`. All match the implementation.
 
 ## Deployment infra these verbs assume (NOT code — provisioning)
 

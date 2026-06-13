@@ -31,9 +31,15 @@ def _headers() -> dict:
 
 def create_job(prompt: str, model: str | None = None) -> str:
     model = model or os.environ.get("MINIMAX_VIDEO_MODEL", "MiniMax-Hailuo-02")
+    body = {
+        "model": model,
+        "prompt": prompt,
+        # Hailuo-02 supports 6 or 10s; a ~9s teaser → 10. Env-overridable.
+        "duration": int(os.environ.get("MINIMAX_VIDEO_DURATION", "6")),
+        "resolution": os.environ.get("MINIMAX_VIDEO_RESOLUTION", "1080P"),
+    }
     resp = requests.post(f"{_base()}/v1/video_generation",
-                         json={"model": model, "prompt": prompt},
-                         headers=_headers(), timeout=60)
+                         json=body, headers=_headers(), timeout=60)
     resp.raise_for_status()
     return resp.json()["task_id"]
 

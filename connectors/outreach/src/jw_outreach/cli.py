@@ -33,17 +33,20 @@ def _conn(args):
 # ---- pull -----------------------------------------------------------------
 
 def cmd_pull(args):
-    contacts = source.search_people(
+    contacts = source.pull_contacts(
         titles=_split(args.titles),
         seniorities=_split(args.seniorities),
         email_statuses=_split(args.status),
         organization_domains=_split(args.domains),
         per_page=args.limit,
+        enrich=not args.no_enrich,
+        reveal_personal_emails=args.reveal_personal,
     )
     conn = _conn(args)
     for c in contacts:
         db.save_contact(conn, c)
-    print(f"pulled {len(contacts)} contacts")
+    mode = "searched (no enrich, FREE, no emails)" if args.no_enrich else "pulled + enriched"
+    print(f"{mode}: {len(contacts)} contacts")
 
 
 # ---- video ----------------------------------------------------------------
@@ -126,7 +129,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seniorities", default="")
     p.add_argument("--status", default="", help="contact_email_status filter, comma sep")
     p.add_argument("--domains", default="")
-    p.add_argument("--limit", type=int, default=25)
+    p.add_argument("--limit", type=int, default=25, help="per_page (search width)")
+    p.add_argument("--no-enrich", action="store_true",
+                   help="search only (FREE, no emails) — preview who matches before spending credits")
+    p.add_argument("--reveal-personal", action="store_true",
+                   help="enrich personal emails too (default: work emails only)")
     _add_db(p)
     p.set_defaults(func=cmd_pull)
 
