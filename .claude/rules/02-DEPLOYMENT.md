@@ -18,6 +18,11 @@ jobworld-cave:latest  (JW's own image: cave stack + JW server)
 Build: `docker build -f Dockerfile.sdk -t avi-jw:latest .`
 (`.dockerignore` keeps venvs / __pycache__ / data / *.db out of the context.)
 
+Run: `deploy/run-instance.sh <client> [instance] [port]` — loads
+`deploy/secrets.<client>.env` (gitignored), wires `JW_CLIENT`/`JW_CLIENT_DIR`/
+`JWOUT_DB`, and `docker run`s the image on a named data volume. Warns and runs
+dry if no secrets file is present.
+
 ## How each layer reaches the instance
 
 | layer | path in image | reaches instance via |
