@@ -19,21 +19,28 @@ client's manual-pipeline targets.
 
 1. **Read targeting** from `$JW_CLIENT_DIR/client.json` → `targeting.titles`,
    `targeting.seniorities`, `targeting.email_statuses`, `targeting.domains`.
-2. **Pull** (CONNECTOR — external Apollo call, costs credits):
+   Apollo is two steps: SEARCH (free, no emails) then ENRICH (bulk_match, ~1
+   credit per matched record). The `pull` verb does both; `--no-enrich` runs
+   search only.
+2. **(Recommended) FREE preview** to see who matches before spending credits:
    ```bash
-   jwout pull \
-     --titles "$(jq -r '.targeting.titles|join(",")' $JW_CLIENT_DIR/client.json)" \
+   jwout pull --titles "$(jq -r '.targeting.titles|join(",")' $JW_CLIENT_DIR/client.json)" \
      --seniorities "$(jq -r '.targeting.seniorities|join(",")' $JW_CLIENT_DIR/client.json)" \
      --status "$(jq -r '.targeting.email_statuses|join(",")' $JW_CLIENT_DIR/client.json)" \
      --domains "$(jq -r '.targeting.domains|join(",")' $JW_CLIENT_DIR/client.json)" \
-     --limit ${LIMIT:-25}
+     --limit ${LIMIT:-25} --no-enrich     # prints matches, saves nothing, costs nothing
    ```
-3. **Apply dedupe** (INSTRUCTION — not a connector verb): read every CSV in
-   `$JW_CLIENT_DIR/dedupe/`. For each pulled contact, if its brand or domain
+3. **Pull + enrich** (CONNECTOR — costs ~1 credit per matched record; saves to DB):
+   the same command without `--no-enrich`.
+4. **Apply dedupe** (INSTRUCTION — not a connector verb): read every CSV in
+   `$JW_CLIENT_DIR/dedupe/`. For each saved contact, if its brand or domain
    appears in any list, mark it excluded and do not pass it downstream. Also
    exclude the client's own primary domain. If `dedupe/` has no CSVs yet, STOP —
    per the client README the engine must not run a live send without them.
-4. **Report** how many were pulled, how many excluded, how many remain.
+   (Credit note: exclusion lists are small named sets, so few credits are spent
+   on contacts later excluded; the free preview in step 2 lets you sanity-check
+   the target set first.)
+5. **Report** how many were pulled, how many excluded, how many remain.
 
 ## Output
 

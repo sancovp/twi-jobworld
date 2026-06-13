@@ -42,11 +42,17 @@ def cmd_pull(args):
         enrich=not args.no_enrich,
         reveal_personal_emails=args.reveal_personal,
     )
+    if args.no_enrich:
+        # Preview only — NOT saved. Un-enriched rows have empty email, which is the
+        # contacts PK, so they cannot be persisted distinctly. Print who matched.
+        for c in contacts:
+            print(f"  {c.brand}  |  {c.first_name} {c.last_name}  |  {c.title}  |  {c.domain}")
+        print(f"searched (FREE, no emails, NOT saved): {len(contacts)} matches")
+        return
     conn = _conn(args)
     for c in contacts:
         db.save_contact(conn, c)
-    mode = "searched (no enrich, FREE, no emails)" if args.no_enrich else "pulled + enriched"
-    print(f"{mode}: {len(contacts)} contacts")
+    print(f"pulled + enriched: {len(contacts)} contacts saved")
 
 
 # ---- video ----------------------------------------------------------------
