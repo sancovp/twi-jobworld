@@ -1,132 +1,219 @@
-# TWI Jobworld
+<div align="center">
 
-**Zero employees. A full company. All AI.**
+# Avi-JW
 
-Instantiate an AI-powered business that runs itself — content, growth, revenue, research, and engineering all handled by agents you coordinate.
+**A JobWorld that runs cold outreach — and specializes to any client by config alone.**
 
-## What You Get
+A fork of [TWI JobWorld](#appendix--the-jobworld-base) whose CEO runs on the Claude Code SDK, plus a **worker layer** of connectors and skills that execute a full hyper-personalized outreach pipeline. The machine is universal. A client is pure configuration. *B6 is just `$client`.*
 
-A complete company with:
-- **5 Agent Roles** — Content, Growth, Revenue, Research, Engineering
-- **Web Dashboard** — live view of everything at `http://localhost:{port}`
-- **Project Hierarchy** — Projects → Milestones → Goals → Tasks
-- **Org Chart** — company structure with agents and goals
-- **Event Log** — every action timestamped and logged
-- **Ralph Loop** — persistent prompt control with toggle
-- **Day Simulation** — track activity by day, close and start new days
+`SDK CEO` · `jwout` connector (7 verbs) · 6 stage skills · 5 departments · config-specialized clients
 
-### Dashboard Sections
+</div>
 
-| Section | What It Shows |
-|---------|---------------|
-| **Metrics** | Open, Supposedly Done, Completed, Blocked task counts |
-| **Projects** | Tree: Projects → Milestones → Goals → Tasks |
-| **Org Chart** | Company → CEO → Departments → Agents → Goals |
-| **Open Tasks** | Live list of pending tasks |
-| **Recent Events** | Audit log of all agent actions |
-| **Ralph Loop** | Persistent prompt control with toggle on/off |
-| **Simulation Days** | Current day, tasks created/completed, close day |
+---
 
-You are the CEO. You coordinate. The agents execute.
+## The idea in one breath
 
-## Worker Layer (outreach, specialized per client)
+A JobWorld is an AI company: a CEO agent coordinating department agents. This fork gives those agents a **real outreach capability** — source leads, write copy, generate a teaser, send, track, read replies, report — and makes the whole thing **specializable to any client by dropping config into named slots.** No code changes to onboard a client; you fill in a directory.
 
-On top of the JW base, this fork ships a **worker layer** that runs
-hyper-personalized cold outreach, specialized per client. Three layers, one law:
+> ### The one law
+> A thing is **code** only if it *must execute* something an LLM cannot do by emitting tokens — an external system, an external effect, or persisted state.
+> **Everything else is an instruction handed to the LLM, not a function.**
+>
+> No string linter. No template filler. No "validate copy" gate. You tell the LLM the template; it fills and self-checks it. Code exists only for SMTP, HTTP APIs, IMAP, the DB, and file hosting.
 
-- **Connectors** (`connectors/`) — the ONLY code: external-effect verbs. The
-  `outreach` connector (`jwout`) has six: `pull · video · send · track · host · reply`.
-- **Skills** (`skills/outreach-*`, `run-outreach-campaign`) — worker procedures
-  that compose connector verbs with client instructions.
-- **Clients** (`clients/<name>`) — the `$client` config: template, rules,
-  positioning, assets, dedupe lists. **B6 is one instance.**
+---
 
-> The one law: a thing is code only if it MUST execute (external system / effect
-> / state). Templates, copy rules, and dedupe lists are instructions handed to
-> the LLM — never a string linter.
+## Architecture — three layers
 
-Departments: `research → content → production → delivery → metacog`. Full
-architecture, diagrams, and deployment: see `.claude/rules/00`, `01`, `02`.
+```mermaid
+flowchart TB
+  subgraph client["clients/ — CONTENT (instructions + data)"]
+    SCHEMA["_schema/ — the $client contract"]
+    B6["b6/ — one instance"]
+  end
+  subgraph skill["skills/ — PROCEDURES"]
+    RUN["run-outreach-campaign (CEO orchestration)"]
+    STAGES["outreach-source · write · teaser · deliver · replies · report"]
+  end
+  subgraph conn["connectors/ — CODE (external effects only)"]
+    OUT["outreach → jwout: pull · video · send · track · host · serve · reply"]
+  end
+  subgraph ext["EXTERNAL SYSTEMS"]
+    direction LR
+    APOLLO["Apollo"]; MINIMAX["MiniMax"]; SMTP["SMTP"]; IMAP["IMAP"]; DB["(SQLite)"]
+  end
+  B6 -. read by .-> skill
+  RUN --> STAGES --> OUT
+  OUT --> APOLLO & MINIMAX & SMTP & IMAP & DB
+  classDef code fill:#1b4,color:#fff; classDef content fill:#48f,color:#fff
+  class conn,OUT code; class client,SCHEMA,B6 content
+```
 
-## Getting Started
+**The bijection** — every concept appears in all three columns, and the columns interlock. (The full set of 17 component & sequence diagrams lives in [`.claude/rules/`](.claude/rules) and [`connectors/outreach/FLOWS.md`](connectors/outreach/FLOWS.md).)
+
+| GENERAL (the process) | SPECIFIC (B6 instance) | CODE (what executes) |
+|---|---|---|
+| source decision-makers | consumer $20M+, director+, those titles | `jwout pull` |
+| write personalized copy | locked positioning + four-part anatomy | *(none — LLM applies instructions)* |
+| make a teaser | show-world + product, navy/chartreuse | `jwout video` + `host` |
+| deliver + record | warmed cold domains, cohorts | `jwout send` + `track` |
+| read + classify replies | monitored inbox | `jwout reply` + `track` |
+| measure | success thresholds, cost cap | `jwout track report` |
+
+---
+
+## The connector — `jwout`
+
+The **only code** in the worker layer. Seven verbs, each one external effect. Credentials come from the environment; nothing client-specific is baked in.
+
+| verb | external effect | status |
+|---|---|---|
+| `pull` | Apollo people search → contacts in DB (free search → paid enrich) | client real · needs key |
+| `video` | MiniMax video gen (create → poll → download) | client real · needs key |
+| `send` | deliver an email over SMTP, record the send | ✅ run-verified |
+| `track` | write the DB; record events; funnel report by variant/cohort | ✅ run-verified |
+| `host` | place an asset at a unique URL | ✅ run-verified |
+| `serve` | serve assets (`view`/GET) + redirect tracked links (`click` → 302) | ✅ run-verified |
+| `reply` | read replies over IMAP | client real · needs creds |
 
 ```bash
-# 1. Enable the plugin
-/plugin enable twi-jobworld
-
-# 2. Instantiate your company
-./skills/instantiate-jobworld/instantiate.sh "Your Company"
-
-# 3. cd in and start running your company
-cd your-company-jobworld
-claude
+jwout pull --titles "CMO,VP Brand" --seniorities director,vp --status verified --limit 25
+jwout video "9s teaser: <prompt>" --out teaser.mp4
+jwout host teaser.mp4                         # → https://<host>/<uid>/teaser.mp4
+jwout send --to a@b.com --subject "..." --body-file copy.txt --from cold1@dom --variant video
+jwout track event <send_id> reply             # delivered|view|click|reply|booked|bounced
+jwout track report --cost 0.50
+jwout serve --port 8000                        # serves assets + records view/click
+jwout reply --json
 ```
 
-The CEO agent guides you through initialization — creating departments, registering agents, setting up cadences.
+---
 
-## How It Works
+## Skills & departments
+
+Six **stage skills** (procedures composing connector verbs with client instructions) and one **CEO orchestration** skill, mapped to five departments. Generative steps are pure instruction-application; deterministic steps are connector verbs.
+
+| department | stage | skill | connector verbs |
+|---|---|---|---|
+| `research` | source leads | `outreach-source` | `pull` |
+| `content` | write copy | `outreach-write` | *(none)* |
+| `production` | make + host teaser | `outreach-teaser` | `video`, `host` |
+| `delivery` | send + replies | `outreach-deliver`, `outreach-replies` | `send`, `reply`, `track` |
+| `metacog` | measure + judge | `outreach-report` | `track report` |
+
+```mermaid
+sequenceDiagram
+  participant CEO
+  participant RES as research
+  participant CON as content
+  participant PRO as production
+  participant DEL as delivery
+  participant MET as metacog
+  CEO->>RES: source N leads for $client
+  RES-->>CON: deduped contacts in DB
+  CON-->>PRO: copy (+ video prompt if video variant)
+  PRO-->>DEL: hosted teaser URL
+  DEL->>DEL: jwout send → send_id
+  DEL->>MET: reply / booked events
+  MET-->>CEO: funnel + verdict vs success thresholds
+```
+
+---
+
+## Specialize to a client = fill config
+
+Onboarding a client adds **no code**. You create `clients/<name>/` to the [`clients/_schema`](clients/_schema) contract:
 
 ```
-You (CEO)
-    ├── Content Lead → creates content, manages publishing
-    ├── Growth Lead → builds audience, does outreach
-    ├── Revenue Lead → tracks monetization, manages tiers
-    ├── Research Agent → monitors industry, competitive intel
-    └── Engineering Agent → builds automations, integrates tools
+clients/<name>/
+├── client.json      # structured params: targeting, sending.domains[], cohorts, costs, calendar
+├── positioning.md   # locked positioning language (instruction)
+├── template.md      # copy template + hard rules + cadence + signature (instruction)
+├── assets.md        # proof links, approved facts, colors, world bible (instruction + data)
+└── dedupe/          # exclusion lists (data)
 ```
 
-All agents expose their work via a REST API. You delegate, review, coordinate.
+Everything a client must provide is a **slot** — a string, number, file, secret, or object. Even a cold sending domain is a config object: `{domain, spf, dkim, dmarc, warmup_status, from_addresses[], daily_cap}` — "warmed" is just `warmup_status: ready`. That it costs money and weeks to reach `ready` is *acquisition cost*, not a different kind of thing (a paid API key is config too). **There is no client requirement that is not config.**
 
-## Who This Is For
+[`clients/b6`](clients/b6) is the worked example. See its [`README`](clients/b6/README.md) for the `NEEDS-FROM-AVI` slots still to be filled.
 
-- **Solopreneurs** who want a full team without hiring
-- **Builders** who want to run a company as a sidecar to their main work
-- **AI explorers** who want to see what agent orchestration looks like at company scale
+---
 
-## What You Do
-
-As CEO:
-1. **Set direction** — what are we selling? Who's the audience?
-2. **Delegate** — agents handle execution
-3. **Review** — check the dashboard, review agent outputs
-4. **Coordinate** — break ties, resolve conflicts, approve major moves
-
-You don't write content. You don't do outreach. You don't build the automations. You make sure the right things get built and they work together.
-
-## The Stack
-
-Built on:
-- TWI Jobworld (company simulation engine)
-- Claude Code (agent coordination)
-
-## Example Companies
-
-- **Content business** — Content + Growth + Revenue agents run the whole show
-- **Agency** — Research + Engineering agents deliver client work
-- **Product company** — All five agents operate like a real startup
-
-## Installation
+## Quickstart
 
 ```bash
-/plugin install twi-jobworld@claude-code-marketplace
+# 1. Build the image (base + SDK CEO + worker layer; installs jwout + jq)
+docker build -f Dockerfile.sdk -t avi-jw:latest .
+
+# 2. (optional) provide a client's credentials
+cp deploy/secrets.example.env deploy/secrets.b6.env   # then fill it
+
+# 3. Run an instance for a client (runs dry without secrets)
+deploy/run-instance.sh b6 b6-outreach 3847
+
+# 4. Drive it: the CEO uses run-outreach-campaign to orchestrate the departments
 ```
 
-Or for development:
+Local connector dev (no Docker):
+
 ```bash
-/plugin enable /path/to/twi-jobworld
+cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
+.venv/bin/jwout --help
 ```
+
+---
+
+## Repository map
+
+| path | what | rule / doc |
+|---|---|---|
+| [`connectors/outreach`](connectors/outreach) | the `jwout` connector (CODE) | [`README`](connectors/outreach/README.md) · [`FLOWS`](connectors/outreach/FLOWS.md) |
+| [`skills/outreach-*`](skills) · `run-outreach-campaign` | worker procedures | [`_OUTREACH-SKILLS.md`](skills/_OUTREACH-SKILLS.md) |
+| [`clients/_schema`](clients/_schema) · [`clients/b6`](clients/b6) | `$client` configs (CONTENT) | [`clients/README`](clients/README.md) |
+| [`agents`](agents) | CEO + 5 department agents | [`01-DEPARTMENTS`](.claude/rules/01-DEPARTMENTS.md) |
+| [`server`](server) · `p_main_agent.py` | SDK-CEO JW server (the swap) | — |
+| [`Dockerfile.sdk`](Dockerfile.sdk) · [`deploy`](deploy) | image + run scripts | [`02-DEPLOYMENT`](.claude/rules/02-DEPLOYMENT.md) |
+
+---
+
+## Status
+
+Branch `worker-layer`. The worker layer is **complete and verified to the ceiling of what's possible without external inputs**:
+
+- ✅ Image builds; `jwout`, `jq`, clients, agents, and all skills verified **in-container**.
+- ✅ `host`, `send`, `track`, `serve` run-verified (incl. an end-to-end pipeline dry-run with the B6 config).
+- ⏳ `pull`, `video`, `reply` are real clients gated on credentials.
+- ⏳ Live B6 send gated on `NEEDS-FROM-AVI` config (warmed domains, calendar, dedupe lists, …).
+
+Every remaining item is a **config value or credential** — none requires new code. Full matrix: [`.claude/rules/03-STATUS.md`](.claude/rules/03-STATUS.md).
+
+---
 
 ## Docs
 
-- [Understand Plugins](skills/understand-plugins/resources/overview.md) — how plugins work
-- [Understand Agents](skills/understand-agents/resources/overview.md) — how agents work
-- [Understand Hooks](skills/understand-hooks/resources/overview.md) — event-driven automation
-- [Understand MCPs](skills/understand-mcps/resources/overview.md) — connecting external services
+| doc | covers |
+|---|---|
+| [`00-WORKER-LAYER-ARCHITECTURE`](.claude/rules/00-WORKER-LAYER-ARCHITECTURE.md) | the law, three layers, bijection, component diagram |
+| [`01-DEPARTMENTS`](.claude/rules/01-DEPARTMENTS.md) | the org, per-contact flow, CEO review loop |
+| [`02-DEPLOYMENT`](.claude/rules/02-DEPLOYMENT.md) | image build chain, entrypoint boot, runtime env |
+| [`03-STATUS`](.claude/rules/03-STATUS.md) | what's verified, the ready-for-any-answer matrix |
+| [`connectors/outreach/FLOWS`](connectors/outreach/FLOWS.md) | connector module diagram + a sequence per verb |
 
-## Futamura Projection
+---
 
-This plugin is P1 in the Futamura tower:
-- P0: Jobworld source code
-- P1: **This plugin** interprets source → outputs new plugin instances
-- P2: understand-plugins (procedure that generates procedures)
-- P3: Meta-system that generates plugin-compilers
+<details>
+<summary><h2>Appendix — the JobWorld base</h2></summary>
+
+Avi-JW is built on **TWI JobWorld**: instantiate an AI-powered company that runs itself, coordinated by a CEO agent.
+
+- **Web dashboard** at `http://localhost:{port}` — metrics, project tree, org chart, event log, day simulation.
+- **Project hierarchy** — Projects → Milestones → Goals → Tasks.
+- **CEO review loop** — agents mark tasks `supposedly_done`; the CEO confirms or sends back.
+- **Event stream + SOP engine** — every action logged; repeated patterns crystallize into SOPs.
+
+The base CEO bootstrap (`instantiate-jobworld`, `ceo-bootstrap`) still works as before; the worker layer adds `run-outreach-campaign` on top.
+
+**Futamura projection** — this plugin is P1 in the tower: P0 = JobWorld source; **P1 = this plugin** (interprets source → new instances); P2 = `understand-plugins`; P3 = a meta-system that generates plugin-compilers.
+
+</details>
