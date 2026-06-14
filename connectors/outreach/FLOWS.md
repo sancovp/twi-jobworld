@@ -116,11 +116,11 @@ sequenceDiagram
   participant R as Recipient browser
   participant SV as jwout serve
   participant DB as SQLite
-  R->>SV: GET /c/<token>?u=<dest>
-  SV->>DB: SELECT id FROM sends WHERE click_token=token
-  DB-->>SV: send_id (if any)
+  R->>SV: GET /c/<token>   (no query param trusted)
+  SV->>DB: SELECT id, click_dest FROM sends WHERE click_token=token
+  DB-->>SV: send_id + stored dest (if any)
   SV->>DB: record_event(send_id, "click")
-  SV-->>R: 302 Location: dest  (missing/invalid dest → 400)
+  SV-->>R: 302 Location: <stored dest>  (unknown token / no dest → 404)
 ```
 
 ## `reply` — IMAP read → classify → track boundary

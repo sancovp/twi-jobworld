@@ -90,8 +90,9 @@ is gitignored (only `secrets.example.env` is tracked).
 - A real **cold SMTP host** on warmed dedicated domains (the mailserver decision).
 - Run **`jwout serve`** behind TLS on the asset domain (view-tracking is now code,
   not a gap; it just needs to be running and reachable).
-- **Open/click** tracking on the email itself needs an ESP pixel / link-rewrite —
-  ESP-dependent, not yet built (view-tracking on the teaser link IS built).
+- **View** (teaser GET) and **click** (tracked `/c/<token>` redirect to the
+  stored destination) tracking ARE built in `jwout serve`. Only **open**-pixel
+  tracking is not — it needs an ESP pixel and is ESP-dependent.
 - Verified **Apollo** field names and **MiniMax video** endpoints (see
   `connectors/outreach/README.md`).
 These are provisioning/verification, gated on client sign-off — not more code.

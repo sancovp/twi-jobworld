@@ -46,12 +46,15 @@ exactly the subject and body it is given.
      --reply-to "$(jq -r .reply_to $JW_CLIENT_DIR/client.json)" \
      --brand "<brand>" --touch <n> --variant "<variant>" --cohort "<cohort>" \
      --asset-url "<hosted teaser URL or empty>" \
-     --click-token "<contents of copy/<email>.touch<n>.token, if any>"
+     --click-token "<contents of copy/<email>.touch<n>.token, if any>" \
+     --click-dest "$(jq -r .calendar_url "$JW_CLIENT_DIR/client.json")"
    # prints: send_id=<N>
    ```
-   The `--click-token` must match the token embedded in the body's tracked CTA
-   link (from `outreach-write`) so `serve`'s `/c/<token>` redirect records a click
-   against this send.
+   The `--click-token` must match the token in the body's tracked CTA link
+   (`${HOST_BASE_URL}/c/<token>`, from `outreach-write`); `--click-dest` is the URL
+   `serve` redirects that token to (the calendar link). The destination is stored
+   on the send, never read from the request, so the tracked link cannot be turned
+   into an open redirect.
 3. **Capture** `send_id` for tracking. Webhook/IMAP-driven events
    (delivered/open/click/view/reply) are recorded later via `jwout track event
    <send_id> <type>` by the tracking layer and `outreach-replies`.

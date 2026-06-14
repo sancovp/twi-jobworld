@@ -41,7 +41,22 @@ def create_job(prompt: str, model: str | None = None) -> str:
     resp = requests.post(f"{_base()}/v1/video_generation",
                          json=body, headers=_headers(), timeout=60)
     resp.raise_for_status()
-    return resp.json()["task_id"]
+    j = resp.json()
+    _check_base_resp(j, "create")
+    task_id = j.get("task_id")
+    if not task_id:
+        raise RuntimeError(f"minimax create returned no task_id: {j}")
+    return task_id
+
+
+def _check_base_resp(j: dict, where: str) -> None:
+    """MiniMax returns HTTP 200 with base_resp.status_code != 0 for auth /
+    credit / rate-limit / content errors. Surface those plainly instead of
+    KeyError-ing on the missing task_id/status."""
+    br = j.get("base_resp") or {}
+    code = br.get("status_code", 0)
+    if code:
+        raise RuntimeError(f"minimax {where} failed: {code} {br.get('status_msg', '')}")
 
 
 def poll(task_id: str, *, interval: float = 10.0, timeout: float = 1200.0) -> str:
@@ -52,6 +67,7 @@ def poll(task_id: str, *, interval: float = 10.0, timeout: float = 1200.0) -> st
                             params={"task_id": task_id}, headers=_headers(), timeout=30)
         resp.raise_for_status()
         body = resp.json()
+        _check_base_resp(body, "poll")
         status = body.get("status")
         if status == "Success":
             return body["file_id"]

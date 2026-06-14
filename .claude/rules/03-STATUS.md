@@ -40,6 +40,7 @@ docker build -f Dockerfile.sdk -t avi-jw:latest .
 | success thresholds | `client.json.success` | metacog verdict |
 | tracked-link host domain | `client.json.host_base_url` + `HOST_BASE_URL` | `host`/`serve` real links |
 | the 3 dedupe CSVs | `clients/b6/dedupe/*.csv` | `outreach-source` exclusion (required for any live send) |
+| postal address + unsubscribe URL | `client.json.compliance.{postal_address,unsubscribe_url}` | CAN-SPAM footer → `outreach-deliver` will not send without it |
 | Apollo master key | `APOLLO_API_KEY` | `pull` |
 | MiniMax key | `MINIMAX_API_KEY` | `video` + CEO model |
 

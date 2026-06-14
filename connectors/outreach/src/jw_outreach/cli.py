@@ -3,7 +3,7 @@
     jwout pull   --titles a,b --seniorities director,vp --status verified --domains x.com,y.com --limit N
     jwout video  "<prompt>" --out teaser.mp4 [--model M]
     jwout send   --to a@b.com --subject S (--body TEXT | --body-file F) --from f@dom [--from-name N] [--reply-to R]
-                 [--brand B --touch N --variant V --cohort C --asset-url U --click-token T]  (records unless --no-record)
+                 [--brand B --touch N --variant V --cohort C --asset-url U --click-token T --click-dest URL]  (records unless --no-record)
     jwout track  event <send_id> <type>
     jwout track  report [--cost FLOAT]
     jwout host   <file> [--uid UID]
@@ -78,7 +78,7 @@ def cmd_send(args):
     sid = db.record_send(conn, to_email=args.to, subject=args.subject, body=body,
                          brand=args.brand, touch=args.touch, variant=args.variant,
                          cohort=args.cohort, asset_url=args.asset_url,
-                         click_token=args.click_token)
+                         click_token=args.click_token, click_dest=args.click_dest)
     print(f"sent to {args.to}; send_id={sid}")
 
 
@@ -167,6 +167,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--asset-url", default="")
     p.add_argument("--click-token", default="",
                    help="the token embedded in tracked links in the body; serve /c/<token> records a click")
+    p.add_argument("--click-dest", default="",
+                   help="the destination serve /c/<token> redirects to (e.g. the calendar URL); stored on the send, never taken from the request")
     p.add_argument("--no-record", action="store_true", help="send without writing to the DB")
     _add_db(p)
     p.set_defaults(func=cmd_send)

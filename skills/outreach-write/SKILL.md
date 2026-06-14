@@ -31,10 +31,11 @@ You are the generator AND the linter — the rules are instructions, not code.
    video-prompt rules (real brand + real product, matches the scene's show-world,
    navy/chartreuse when branding appears).
 4. **Tracked CTA link (for click measurement):** mint a unique token for this
-   contact+touch (any random hex string, e.g. `tok_<12 hex>`). Write the CTA's
-   calendar link as a tracked URL so a click is measurable:
-   `${HOST_BASE_URL}/c/<token>?u=<calendar_url>`. Use that tracked URL in the
-   body wherever the calendar CTA appears. (If `HOST_BASE_URL` is not set, use the
+   contact+touch (any random hex string, e.g. `tok_<12 hex>`). Use the bare
+   tracked URL `${HOST_BASE_URL}/c/<token>` in the body wherever the calendar CTA
+   appears — do NOT put the calendar URL in the link as a query param. The
+   destination is stored on the send row at deliver time (`--click-dest`), so the
+   redirect target cannot be tampered with. (If `HOST_BASE_URL` is not set, use the
    raw calendar link and skip the token — clicks just won't be tracked.)
 5. **Append the CAN-SPAM footer** from `client.json.compliance`: a blank line,
    then the client's `postal_address`, then an unsubscribe line pointing at

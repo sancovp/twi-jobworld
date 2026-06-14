@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS sends (
     touch INTEGER, variant TEXT, cohort TEXT,
     asset_url TEXT,
     click_token TEXT,
+    click_dest TEXT,
     sent_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS events (
@@ -40,11 +41,28 @@ CREATE TABLE IF NOT EXISTS events (
 """
 
 
+# Columns added to `sends` after the first release. CREATE TABLE IF NOT EXISTS
+# will NOT add these to a pre-existing table, so we ensure them explicitly —
+# otherwise the first send/click against an old DB raises "no such column".
+_SENDS_ADDED_COLUMNS = ["asset_url TEXT", "click_token TEXT", "click_dest TEXT"]
+
+
 def connect(db_path: Path = DB_PATH) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.executescript(SCHEMA)
+    _migrate(conn)
     return conn
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Idempotently add any columns missing from an older `sends` table."""
+    have = {r[1] for r in conn.execute("PRAGMA table_info(sends)")}
+    for col in _SENDS_ADDED_COLUMNS:
+        name = col.split()[0]
+        if name not in have:
+            conn.execute(f"ALTER TABLE sends ADD COLUMN {col}")
+    conn.commit()
 
 
 def save_contact(conn: sqlite3.Connection, c: Contact) -> None:
@@ -72,11 +90,12 @@ def load_contacts(conn: sqlite3.Connection) -> list[Contact]:
 def record_send(conn: sqlite3.Connection, *, to_email: str, subject: str,
                 body: str, brand: str = "", touch: int = 1,
                 variant: str = "", cohort: str = "", asset_url: str = "",
-                click_token: str = "") -> int:
+                click_token: str = "", click_dest: str = "") -> int:
     cur = conn.execute(
         "INSERT INTO sends (to_email, brand, subject, body, touch, variant, "
-        "cohort, asset_url, click_token) VALUES (?,?,?,?,?,?,?,?,?)",
-        (to_email, brand, subject, body, touch, variant, cohort, asset_url, click_token),
+        "cohort, asset_url, click_token, click_dest) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        (to_email, brand, subject, body, touch, variant, cohort, asset_url,
+         click_token, click_dest),
     )
     conn.commit()
     return cur.lastrowid

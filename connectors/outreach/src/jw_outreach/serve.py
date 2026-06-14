@@ -9,15 +9,20 @@ Mapping: `host` returns HOST_BASE_URL/<uid>/<file> and that URL is stored on the
 send row (sends.asset_url) by `send`. A GET on /<uid>/<file> looks the uid up in
 sends.asset_url and records the view. The funnel report counts DISTINCT send_id,
 so repeat views do not inflate the rate.
+
+It also handles tracked-link clicks: GET /c/<token> records a `click` and 302s to
+the destination STORED on the send row (sends.click_dest). The destination never
+comes from the request, so the link cannot be tampered into an open redirect.
     HOST_DIR   (default data/hosted)  — docroot
-    JWOUT_DB                          — where view events are recorded
+    JWOUT_DB                          — where view/click events are recorded
 """
 
+import mimetypes
 import os
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 
 from . import db
 
@@ -31,22 +36,35 @@ def _connect(db_path):
 
 def _record_view(uid: str, db_path=None) -> None:
     conn = _connect(db_path)
-    row = conn.execute(
-        "SELECT id FROM sends WHERE asset_url LIKE ? ORDER BY id DESC LIMIT 1",
-        (f"%/{uid}/%",),
-    ).fetchone()
-    if row:
-        db.record_event(conn, row[0], "view")
+    try:
+        row = conn.execute(
+            "SELECT id FROM sends WHERE asset_url LIKE ? ORDER BY id DESC LIMIT 1",
+            (f"%/{uid}/%",),
+        ).fetchone()
+        if row:
+            db.record_event(conn, row[0], "view")
+    finally:
+        conn.close()
 
 
-def _record_click(token: str, db_path=None) -> None:
+def _click_dest(token: str, db_path=None) -> str | None:
+    """Record a click for this token and return the STORED destination.
+
+    The redirect target comes only from the send row (sends.click_dest), never
+    from the request — so a tampered query param cannot turn a tracking link
+    into an open redirect. Unknown token -> None (handler 404s)."""
     conn = _connect(db_path)
-    row = conn.execute(
-        "SELECT id FROM sends WHERE click_token=? ORDER BY id DESC LIMIT 1",
-        (token,),
-    ).fetchone()
-    if row:
+    try:
+        row = conn.execute(
+            "SELECT id, click_dest FROM sends WHERE click_token=? ORDER BY id DESC LIMIT 1",
+            (token,),
+        ).fetchone()
+        if not row:
+            return None
         db.record_event(conn, row[0], "click")
+        return row[1]
+    finally:
+        conn.close()
 
 
 def make_handler(docroot: Path, db_path=None):
@@ -57,19 +75,20 @@ def make_handler(docroot: Path, db_path=None):
         def do_GET(self):
             if self.path == "/health":
                 self.send_response(200); self.end_headers(); self.wfile.write(b"ok"); return
-            # tracked click: /c/<token>?u=<dest> — record a click, 302 to dest
+            # tracked click: /c/<token> — record a click and 302 to the
+            # destination STORED on the send row. No query param is trusted, so
+            # this cannot be turned into an open redirect.
             split = urlsplit(self.path)
             cm = _CLICK_RE.match(split.path)
             if cm:
-                dest = (parse_qs(split.query).get("u") or [""])[0]
                 try:
-                    _record_click(cm.group(1), db_path)
+                    dest = _click_dest(cm.group(1), db_path)
                 except Exception:
-                    pass
-                if dest.startswith("http://") or dest.startswith("https://"):
+                    dest = None
+                if dest and (dest.startswith("http://") or dest.startswith("https://")):
                     self.send_response(302); self.send_header("Location", dest); self.end_headers()
                 else:
-                    self.send_response(400); self.end_headers()
+                    self.send_response(404); self.end_headers()
                 return
             m = _UID_RE.match(self.path)
             rel = self.path.lstrip("/").split("?", 1)[0]
@@ -89,7 +108,10 @@ def make_handler(docroot: Path, db_path=None):
                 except Exception:
                     pass  # never let tracking break delivery of the asset
             data = target.read_bytes()
+            ctype = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
             self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
