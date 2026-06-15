@@ -11,6 +11,7 @@ content that specializes the generic JW outreach process for B6. No code here.
 | `positioning.md` | locked positioning — "we build shows for brands; own a show, not an ad" |
 | `template.md` | copy template, hard rules, four-part anatomy, cadence, signature |
 | `assets.md` | proof links, approved facts, colors, show bible, honesty framing |
+| `icp.md` | ICP scoring rubric for `outreach-qualify` (qualified TAM); see `.claude/rules/04-MARKET-MAPPING.md` |
 | `dedupe/` | exclusion lists (STC / Trashed / 7 Stories) |
 
 ## Scope (SPEC §2)

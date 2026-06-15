@@ -344,13 +344,34 @@ def render_business(conn, client_dir):
                     f"<span class=fn>{val} <em>{sub}</em></span></div>")
         som_sub = (f"@ {m['booked_rate']*100:.1f}% booked-rate" if m["booked_rate"] is not None
                    else "needs booked data")
+        bars = (bar("TAM", tam, tam, "all ICP decision-makers")
+                + bar("SAM", sam, tam, "reachable (verified email)")
+                + bar("SOM", som, tam, som_sub))
+        if m["qual_tam"] is not None:
+            bars += bar("Qualified TAM", m["qual_tam"], tam,
+                        f"@ {m['qual_rate']*100:.0f}% ICP-fit (LLM-scored)")
+        # qualification rollup (the raw count is an upper bound; LLM scoring sharpens it)
+        if m["scored"]:
+            chips = "".join(
+                f"<span class='chip {'y' if t in ('A', 'B') else 'n'}'>{_esc(t)}: {n}</span>"
+                for t, n in sorted((m["by_tier"] or {}).items()))
+            qual = (f"<p style='margin-top:10px'>ICP-scored <b>{m['scored']}</b> pulled accounts · "
+                    f"good-fit <b>{m['qual_rate']*100:.0f}%</b> &nbsp;{chips}"
+                    f"<br><span class=dim>qualified TAM/SAM = raw count × this fit-rate — sharpens "
+                    f"as you score more (the raw Apollo count is an upper bound)</span></p>")
+        else:
+            qual = ("<p class=dim style='margin-top:10px'>Run the <code>outreach-qualify</code> "
+                    "skill to LLM-score the pulled accounts against the client ICP — turns the raw "
+                    "Apollo count into a <b>qualified</b> TAM (the count alone over-states the market).</p>")
+        cube = m["by_seniority"] or {}
+        cube_html = ("<p class=dim style='margin-top:6px'>by seniority (free sweep): "
+                     + " · ".join(f"{_esc(k)} {v:,}" for k, v in cube.items()) + "</p>") if cube else ""
         market_block = (
-            bar("TAM", tam, tam, "all ICP decision-makers")
-            + bar("SAM", sam, tam, "reachable (verified email)")
-            + bar("SOM", som, tam, som_sub)
+            bars
             + f"<p class=dim style='margin-top:8px'>snapshot {_esc(m['market_at'])} · "
               f"coverage {(_pct(m['sent'], m['sam']) if m['sam'] else '—')} of SAM contacted · "
-              f"sharpens as more sends land</p>")
+              f"SOM sharpens as more sends land</p>"
+            + cube_html + qual)
 
     deal_line = (f"deal value <b>{_money(deal)}</b> — pipeline shown in $"
                  if deal is not None else

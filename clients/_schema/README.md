@@ -12,6 +12,7 @@ pieces; the worker never hard-codes any of it.
 | `template.md` | instruction | the write-copy step (LLM) | yes |
 | `assets.md` | instruction + data | the write-copy + teaser steps (LLM) | yes |
 | `dedupe/` | data | the source/deliver steps (skip-list) | if the client has exclusion lists |
+| `icp.md` | instruction | the `outreach-qualify` step (LLM ICP scoring) | recommended (enables qualified TAM) |
 | `README.md` | doc | humans / future sessions | yes |
 
 ## `client.json` fields

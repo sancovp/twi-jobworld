@@ -23,10 +23,15 @@ client which items are blocking.
 
 ## The loop
 
+0. **research** → (optional, once per cycle) `jwout market refresh`: snapshot
+   TAM/SAM + the free seniority cube so the business dashboard can size the market.
 1. **research** → `outreach-source`: pull a batch for the client's targeting,
    dedupe, land contacts in `JWOUT_DB`. Review the pulled/excluded/remaining
    counts before proceeding.
-2. For each remaining contact, and each touch in the cadence:
+1b. **research** → `outreach-qualify`: LLM-score the pulled accounts against the
+   client `icp.md`; store fit tier/score. Work the good-fit (A/B) accounts first;
+   this also turns the raw count into a qualified TAM on the dashboard.
+2. For each remaining good-fit contact, and each touch in the cadence:
    a. **content** → `outreach-write`: write subject + body (+ video prompt for
       the video arm), applying the client's positioning/template/assets.
    b. **production** (video arm only) → `outreach-teaser`: generate + host the

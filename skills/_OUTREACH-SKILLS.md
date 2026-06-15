@@ -31,6 +31,7 @@ six stage skills below are the per-stage procedures it drives.
 | skill | stage | connector verbs | client instructions used |
 |---|---|---|---|
 | `outreach-source` | find leads | `jwout pull` | `client.json.targeting`, `dedupe/` |
+| `outreach-qualify` | score ICP fit | `jwout qualify set` | `icp.md` (the rubric) |
 | `outreach-write` | write copy | *(none — pure instruction)* | `positioning.md`, `template.md`, `assets.md` |
 | `outreach-teaser` | make + host clip | `jwout video`, `jwout host` | `template.md` video rules, `assets.md` colors/world |
 | `outreach-deliver` | send + record | `jwout send`, `jwout track event` | `client.json` from/reply/variant/cohort, CAN-SPAM footer |

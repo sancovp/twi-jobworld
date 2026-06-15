@@ -6,7 +6,7 @@ Snapshot of where the worker layer stands. Update this whenever state changes.
 
 | piece | state | how verified |
 |---|---|---|
-| `connectors/outreach` (`jwout`) | 10 verbs | imports clean; in-image |
+| `connectors/outreach` (`jwout`) | 11 verbs | imports clean; in-image |
 | `host` / `send` / `track` / `serve` | ✅ run-verified | host (URL), send (local SMTP, send_id), track (events+report), serve (view 200, click 302+recorded, traversal 404) |
 | `pull` (Apollo search→enrich) | ✅ doc-verified, real client | two-step confirmed vs docs; needs key for live call |
 | `video` (MiniMax) | ✅ doc-verified, real client | endpoints/auth/status/model/body confirmed vs docs; needs key |

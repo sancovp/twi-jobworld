@@ -12,11 +12,14 @@ Dollar figures appear only when the client config supplies
 never a fabricated number.
 """
 
+import json
+
 from . import db, source
 
 
 def refresh(conn, targeting: dict, api_key: str | None = None) -> dict:
-    """Free Apollo searches → store a TAM/SAM snapshot."""
+    """Free Apollo searches → store a TAM/SAM snapshot + a per-seniority cube.
+    Every call here is `search_total` (per_page=1) = no credits."""
     titles = targeting.get("titles") or None
     seniorities = targeting.get("seniorities") or None
     statuses = targeting.get("email_statuses") or None
@@ -26,8 +29,14 @@ def refresh(conn, targeting: dict, api_key: str | None = None) -> dict:
     sam = source.search_total(titles=titles, seniorities=seniorities,
                               email_statuses=statuses,
                               organization_domains=domains, api_key=api_key)
-    db.record_market(conn, tam, sam)
-    return {"tam": tam, "sam": sam}
+    # free filter-sweep: reachable (SAM-filtered) count per seniority band
+    cube = {}
+    for sen in (seniorities or []):
+        cube[sen] = source.search_total(titles=titles, seniorities=[sen],
+                                        email_statuses=statuses,
+                                        organization_domains=domains, api_key=api_key)
+    db.record_market(conn, tam, sam, json.dumps({"by_seniority": cube}))
+    return {"tam": tam, "sam": sam, "by_seniority": cube}
 
 
 def _distinct_contacts_with_event(conn, ev: str) -> int:
@@ -54,6 +63,19 @@ def metrics(conn, client: dict) -> dict:
     sam = mk["sam"] if mk else None
     som = int(sam * booked_rate) if (sam is not None and booked_rate is not None) else None
     coverage = (sent / sam) if (sam and sam > 0) else None  # share of SAM touched
+    cube = {}
+    if mk and mk.get("breakdown"):
+        try:
+            cube = json.loads(mk["breakdown"]).get("by_seniority", {})
+        except Exception:
+            cube = {}
+
+    # qualification: LLM ICP scores on the pulled sample → a rate that sharpens
+    # the raw Apollo count into a QUALIFIED TAM/SAM (the count is an upper bound).
+    fit = db.fit_summary(conn)
+    qrate = fit["rate"]
+    qual_tam = int(tam * qrate) if (tam is not None and qrate is not None) else None
+    qual_sam = int(sam * qrate) if (sam is not None and qrate is not None) else None
 
     econ = (client or {}).get("economics") or {}
     deal = econ.get("avg_deal_value_usd")
@@ -67,9 +89,12 @@ def metrics(conn, client: dict) -> dict:
         "won": booked, "in_progress": in_progress, "lost": lost, "potential": potential,
         "booked_rate": booked_rate,
         "tam": tam, "sam": sam, "som": som, "coverage": coverage,
+        "qual_rate": qrate, "qual_tam": qual_tam, "qual_sam": qual_sam,
+        "scored": fit["scored"], "by_tier": fit["by_tier"], "good_fit": fit["good_fit"],
+        "by_seniority": cube,
         "market_at": mk["computed_at"] if mk else None,
         "deal_value": deal,
         "won_value": dollars(booked),
         "som_value": dollars(som),
-        "tam_value": dollars(tam),  # full-market $ if every reachable lead booked (ceiling)
+        "tam_value": dollars(qual_tam if qual_tam is not None else tam),
     }

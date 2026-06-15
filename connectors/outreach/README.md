@@ -1,6 +1,6 @@
 # `connectors/outreach` — the `jwout` connector
 
-The universal outreach connector. Ten external-effect verbs and nothing else.
+The universal outreach connector. Eleven external-effect verbs and nothing else.
 No copy logic, no rules engine, no templates — those are instructions the LLM
 applies from a `clients/` config. (See `../../.claude/rules/00-WORKER-LAYER-ARCHITECTURE.md`.)
 
@@ -11,7 +11,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 # gives the `jwout` console script
 ```
 
-## The ten verbs
+## The eleven verbs
 
 | verb | external effect | key env vars | run-verified? |
 |---|---|---|---|
@@ -22,7 +22,8 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
 | `serve` | HTTP-serve assets (`view`/GET) + tracked-link `click` redirect (stored dest) + `/u/<token>` one-click unsubscribe | `HOST_DIR`, `JWOUT_DB` | ✅ ran (serve+view; click→302; traversal 404; /u→suppress+200) |
 | `dashboard` | read-view, two pages: `/` ops (funnel/contacts/replies/gates) + `/business` exec (won/lost/potential, TAM→SAM→SOM, cost, revenue stub); localhost | `JWOUT_DB`, `JW_CLIENT_DIR` | ✅ ran (both routes; $ math; empty + no-snapshot states) |
-| `market` | `refresh` → snapshot TAM (all ICP decision-makers) + SAM (reachable) via FREE Apollo search totals | `APOLLO_API_KEY`, `JW_CLIENT_DIR` | client real; needs key |
+| `market` | `refresh` → snapshot TAM (all ICP decision-makers) + SAM (reachable) + per-seniority cube via FREE Apollo search totals | `APOLLO_API_KEY`, `JW_CLIENT_DIR` | client real; needs key |
+| `qualify` | `set <email> --tier --score --reason` / `summary` — store LLM ICP fit scores → qualified TAM | `JWOUT_DB` | ✅ ran (set/summary; qualified-TAM math) |
 | `suppress` | opt-out list: `add <email>` / `check <email>` (exit 2 if suppressed) | `JWOUT_DB` | ✅ ran (add/check + /u recording) |
 | `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
 
@@ -41,7 +42,9 @@ jwout track   event <send_id> delivered|open|click|view|reply|booked|bounced
 jwout track   report [--cost 0.50]
 jwout serve   [--host 0.0.0.0] [--port 8000] [--docroot DIR]  # long-running; /<uid>/<file>→view ; /c/<tok>→click+302(stored dest) ; /u/<tok>→suppress+page
 jwout dashboard [--host 127.0.0.1] [--port 8787] [--client-dir DIR]  # localhost; / = ops, /business = exec
-jwout market   refresh [--client-dir DIR]     # free Apollo search → TAM/SAM snapshot (SOM computed live)
+jwout market   refresh [--client-dir DIR]     # free Apollo search → TAM/SAM + seniority cube (SOM computed live)
+jwout qualify  set <email> --tier A --score 88 --reason "..."   # store an LLM ICP fit score
+jwout qualify  summary                        # scored count · good-fit rate · by tier
 jwout suppress add <email> [--reason unsubscribe|hostile|bounce|manual] [--source ...]
 jwout suppress check <email>                  # exit 2 if suppressed (deliver gate)
 jwout reply   [--folder INBOX] [--all] [--limit 50] [--json]

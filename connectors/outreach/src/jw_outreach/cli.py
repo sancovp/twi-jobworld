@@ -9,7 +9,8 @@
     jwout host     <file> [--uid UID]
     jwout serve    [--host H] [--port N] [--docroot D]  (/<uid>/<file>->view; /c/<token>->click+302 stored dest; /u/<token>->unsubscribe)
     jwout dashboard [--host H] [--port N] [--client-dir D]  (localhost read-view: / = ops funnel, /business = exec)
-    jwout market   refresh [--client-dir D]  (free Apollo search totals → TAM/SAM snapshot; SOM computed live)
+    jwout market   refresh [--client-dir D]  (free Apollo search totals → TAM/SAM + seniority cube; SOM computed live)
+    jwout qualify  set <email> --tier T [--score N] [--reason R] | summary  (store LLM ICP fit → qualified TAM)
     jwout suppress add <email> [--reason R] | check <email>  (opt-out list; check exits 2 if suppressed)
     jwout reply    [--folder INBOX] [--all] [--limit N] [--json]
 
@@ -118,6 +119,22 @@ def cmd_serve(args):
 def cmd_dashboard(args):
     dashboard.dashboard(host=args.host, port=args.port, db_path=args.db or None,
                         client_dir=args.client_dir or None)
+
+
+# ---- qualify (ICP score storage) -------------------------------------------
+
+def cmd_qualify_set(args):
+    conn = _conn(args)
+    if not db.set_fit(conn, args.email, args.tier.upper(), args.score, args.reason):
+        sys.exit(f"no contact '{args.email}' to score (pull it first)")
+    print(f"scored {args.email}: tier {args.tier.upper()} ({args.score})")
+
+
+def cmd_qualify_summary(args):
+    conn = _conn(args)
+    s = db.fit_summary(conn)
+    rate = f"{s['rate']*100:.0f}%" if s["rate"] is not None else "—"
+    print(f"scored {s['scored']} · good-fit {s['good_fit']} ({rate}) · by tier {s['by_tier']}")
 
 
 # ---- market ----------------------------------------------------------------
@@ -248,10 +265,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_mkt = top.add_parser("market", help="TAM/SAM market sizing (free Apollo search totals)")
     sub = p_mkt.add_subparsers(dest="verb", required=True)
-    pr = sub.add_parser("refresh", help="snapshot TAM (all ICP decision-makers) + SAM (reachable)")
+    pr = sub.add_parser("refresh", help="snapshot TAM (all ICP decision-makers) + SAM (reachable) + seniority cube")
     pr.add_argument("--client-dir", default="", help="client config dir (default: JW_CLIENT_DIR)")
     _add_db(pr)
     pr.set_defaults(func=cmd_market_refresh)
+
+    p_q = top.add_parser("qualify", help="store/read LLM ICP fit scores (qualified TAM)")
+    sub = p_q.add_subparsers(dest="verb", required=True)
+    qs = sub.add_parser("set", help="store an ICP fit score on a contact")
+    qs.add_argument("email")
+    qs.add_argument("--tier", required=True, help="A|B|C|D (A/B = good fit)")
+    qs.add_argument("--score", type=int, default=None, help="0..100")
+    qs.add_argument("--reason", default="", help="the reasoning trace (auditable)")
+    _add_db(qs)
+    qs.set_defaults(func=cmd_qualify_set)
+    qsum = sub.add_parser("summary", help="qualification rollup (rate + by-tier)")
+    _add_db(qsum)
+    qsum.set_defaults(func=cmd_qualify_summary)
 
     p_sup = top.add_parser("suppress", help="opt-out list (CAN-SPAM): add / check")
     sub = p_sup.add_subparsers(dest="verb", required=True)

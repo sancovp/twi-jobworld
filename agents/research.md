@@ -7,6 +7,7 @@ agentType: general-purpose
 model: claude-sonnet-4-6
 skills:
   - outreach-source
+  - outreach-qualify
   - jobworld-report-event
 ---
 
