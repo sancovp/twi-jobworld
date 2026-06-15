@@ -59,6 +59,32 @@ def search_people(
     return resp.json().get("people", [])
 
 
+def search_total(
+    *,
+    titles: list[str] | None = None,
+    seniorities: list[str] | None = None,
+    email_statuses: list[str] | None = None,
+    organization_domains: list[str] | None = None,
+    api_key: str | None = None,
+) -> int:
+    """How many people match these filters — `pagination.total_entries` from a
+    free 1-result search. Used for TAM/SAM sizing without spending credits."""
+    api_key = api_key or os.environ["APOLLO_API_KEY"]
+    payload: dict = {"per_page": 1, "page": 1}
+    if titles:
+        payload["person_titles"] = titles
+    if seniorities:
+        payload["person_seniorities"] = seniorities
+    if email_statuses:
+        payload["contact_email_status"] = email_statuses
+    if organization_domains:
+        payload["q_organization_domains_list"] = organization_domains
+    resp = requests.post(f"{APOLLO_BASE}/mixed_people/api_search",
+                         json=payload, headers=_headers(api_key), timeout=30)
+    resp.raise_for_status()
+    return int(resp.json().get("pagination", {}).get("total_entries", 0))
+
+
 def enrich_people(
     stubs: list[dict],
     *,

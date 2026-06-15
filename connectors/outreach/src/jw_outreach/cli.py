@@ -8,7 +8,8 @@
     jwout track    report [--cost FLOAT]
     jwout host     <file> [--uid UID]
     jwout serve    [--host H] [--port N] [--docroot D]  (/<uid>/<file>->view; /c/<token>->click+302 stored dest; /u/<token>->unsubscribe)
-    jwout dashboard [--host H] [--port N] [--client-dir D]  (operator read-view: funnel/contacts/replies/gates; localhost)
+    jwout dashboard [--host H] [--port N] [--client-dir D]  (localhost read-view: / = ops funnel, /business = exec)
+    jwout market   refresh [--client-dir D]  (free Apollo search totals → TAM/SAM snapshot; SOM computed live)
     jwout suppress add <email> [--reason R] | check <email>  (opt-out list; check exits 2 if suppressed)
     jwout reply    [--folder INBOX] [--all] [--limit N] [--json]
 
@@ -18,10 +19,11 @@ templates and dedupe lists are NOT here — they are instructions the LLM applie
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
-from . import dashboard, db, host, reply, send, serve, source, video
+from . import dashboard, db, host, market, reply, send, serve, source, video
 
 
 def _split(s: str) -> list[str]:
@@ -116,6 +118,18 @@ def cmd_serve(args):
 def cmd_dashboard(args):
     dashboard.dashboard(host=args.host, port=args.port, db_path=args.db or None,
                         client_dir=args.client_dir or None)
+
+
+# ---- market ----------------------------------------------------------------
+
+def cmd_market_refresh(args):
+    client_dir = args.client_dir or os.environ.get("JW_CLIENT_DIR")
+    if not client_dir:
+        sys.exit("set --client-dir or JW_CLIENT_DIR (need the targeting for TAM/SAM)")
+    client = json.loads((Path(client_dir) / "client.json").read_text())
+    conn = _conn(args)
+    res = market.refresh(conn, client.get("targeting") or {})
+    print(f"market snapshot: TAM {res['tam']:,} decision-makers · SAM {res['sam']:,} reachable")
 
 
 # ---- suppress --------------------------------------------------------------
@@ -225,12 +239,19 @@ def build_parser() -> argparse.ArgumentParser:
     _add_db(p)
     p.set_defaults(func=cmd_serve)
 
-    p = top.add_parser("dashboard", help="operator read-view: funnel, contacts, replies, gates (localhost)")
+    p = top.add_parser("dashboard", help="read-view: ops funnel (/) + business/exec (/business); localhost")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8787)
     p.add_argument("--client-dir", default="", help="client config dir for the gate panel (default: JW_CLIENT_DIR)")
     _add_db(p)
     p.set_defaults(func=cmd_dashboard)
+
+    p_mkt = top.add_parser("market", help="TAM/SAM market sizing (free Apollo search totals)")
+    sub = p_mkt.add_subparsers(dest="verb", required=True)
+    pr = sub.add_parser("refresh", help="snapshot TAM (all ICP decision-makers) + SAM (reachable)")
+    pr.add_argument("--client-dir", default="", help="client config dir (default: JW_CLIENT_DIR)")
+    _add_db(pr)
+    pr.set_defaults(func=cmd_market_refresh)
 
     p_sup = top.add_parser("suppress", help="opt-out list (CAN-SPAM): add / check")
     sub = p_sup.add_subparsers(dest="verb", required=True)

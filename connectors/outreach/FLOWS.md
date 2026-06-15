@@ -16,24 +16,44 @@ flowchart TB
     SND["send.py — send (SMTP)"]
     HST["host.py — host (unique URL)"]
     SRV["serve.py — serve (view + click + /u unsubscribe)"]
-    DSH["dashboard.py — dashboard (read view)"]
+    DSH["dashboard.py — dashboard (ops / business read views)"]
+    MKT["market.py — market (TAM/SAM + business metrics)"]
     RPL["reply.py — reply (IMAP)"]
-    DBM["db.py — track + suppressions + state"]
+    DBM["db.py — track + suppressions + market + state"]
     MOD["models.py — Contact"]
   end
-  CLI --> SRC & VID & SND & HST & SRV & DSH & RPL & DBM
+  CLI --> SRC & VID & SND & HST & SRV & DSH & MKT & RPL & DBM
   SRC --> MOD
   DBM --> MOD
   SRV --> DBM
-  DSH --> DBM
+  DSH --> DBM & MKT
+  MKT --> DBM & SRC
   classDef code fill:#1b4,color:#fff
-  class CLI,SRC,VID,SND,HST,SRV,DSH,RPL,DBM,MOD code
+  class CLI,SRC,VID,SND,HST,SRV,DSH,MKT,RPL,DBM,MOD code
 ```
 
 `send`, `host`, `video`, `reply` have no internal deps (stdlib/requests only);
 `serve` and `dashboard` reach state through `db` (serve is recipient-facing on
-the public host; dashboard is operator-facing on localhost); `source` and `db`
-share the `Contact` shape.
+the public host; dashboard is operator-facing on localhost); `market` sizes TAM/SAM
+via `source` (free Apollo) and is read by `dashboard`'s business view; `source`
+and `db` share the `Contact` shape.
+
+## `market refresh` — TAM/SAM sizing boundary (free)
+
+```mermaid
+sequenceDiagram
+  participant W as Operator
+  participant CLI as jwout market refresh
+  participant AP as Apollo
+  participant DB as SQLite
+  W->>CLI: market refresh (reads $client targeting)
+  CLI->>AP: search_total(titles+seniorities)         %% TAM — all ICP decision-makers
+  AP-->>CLI: pagination.total_entries (FREE, no credits)
+  CLI->>AP: search_total(+ verified email status)    %% SAM — reachable subset
+  AP-->>CLI: total_entries
+  CLI->>DB: record_market(tam, sam)
+  Note over DB: dashboard /business reads the snapshot; SOM = SAM × live booked-rate (sharpens with data)
+```
 
 ## `pull` — Apollo two-step execution boundary
 

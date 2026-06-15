@@ -26,9 +26,13 @@
     "postal_address": null,
     "unsubscribe_url": null
   },
+  "economics": {
+    "avg_deal_value_usd": null
+  },
   "env_profile": "b6",
   "_needs_from_avi": {
     "compliance": "a real physical postal address and a working unsubscribe URL for the CAN-SPAM footer. outreach-write appends them to every body; the deliver step refuses to send without them.",
+    "economics": "(optional) avg_deal_value_usd — the average value of a closed sponsored/co-developed series. Lets the business dashboard value the pipeline (won/SOM/TAM) in dollars. Without it the dashboard shows counts only.",
     "sending.domains": "one or more cold sending-domain objects {domain, spf, dkim, dmarc, warmup_status, from_addresses, daily_cap}, separate from b6studios.com (SPEC §8). NEVER send from b6studios.com / mason@b6studios.com. The deliver step only sends from a domain whose warmup_status is 'ready' — warming is a ~2-4 week field-value change, not a missing capability.",
     "reply_to": "a monitored reply inbox on the cold domain (SPEC §8 reply routing).",
     "calendar_url": "the Mason + Weston 15-min booking link (SPEC §7 step 7).",

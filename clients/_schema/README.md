@@ -35,6 +35,8 @@ See `client.schema.json` for the formal contract. Summary:
 | `cost_per_send_usd` | number | `jwout track report --cost` | for cost/booked |
 | `success` | object | reporting | target booked-rate, max cost/meeting |
 | `host_base_url` | string | `HOST_DIR`/`HOST_BASE_URL` for `jwout host` | where assets are served |
+| `compliance` | object | `outreach-write`/`-deliver` | `{postal_address, unsubscribe_url}` — CAN-SPAM footer (deliver gates on it) |
+| `economics` | object | dashboard `/business` | `{avg_deal_value_usd}` — values the pipeline in $ (optional; counts only if null) |
 | `env_profile` | string | deployment | which secret bundle (SMTP/IMAP/API keys) to load |
 
 ### `sending.domains[]` — the cold-domain config object

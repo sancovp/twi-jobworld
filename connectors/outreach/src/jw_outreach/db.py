@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS suppressions (
     source TEXT,           -- self-service | reply | api | ...
     created_at TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS market (
+    -- TAM/SAM snapshots from Apollo search totals (history, read latest).
+    id INTEGER PRIMARY KEY,
+    tam INTEGER, sam INTEGER,
+    computed_at TEXT DEFAULT (datetime('now'))
+);
 """
 
 
@@ -125,6 +131,18 @@ def is_suppressed(conn: sqlite3.Connection, email: str) -> bool:
         "SELECT 1 FROM suppressions WHERE email=?", (email.lower().strip(),)
     ).fetchone()
     return row is not None
+
+
+def record_market(conn: sqlite3.Connection, tam: int, sam: int) -> None:
+    conn.execute("INSERT INTO market (tam, sam) VALUES (?,?)", (tam, sam))
+    conn.commit()
+
+
+def latest_market(conn: sqlite3.Connection) -> dict | None:
+    row = conn.execute(
+        "SELECT tam, sam, computed_at FROM market ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    return {"tam": row[0], "sam": row[1], "computed_at": row[2]} if row else None
 
 
 def record_event(conn: sqlite3.Connection, send_id: int, event_type: str) -> None:

@@ -6,7 +6,7 @@
 
 A fork of [TWI JobWorld](#appendix--the-jobworld-base) whose CEO runs on the Claude Code SDK, plus a **worker layer** of connectors and skills that execute a full hyper-personalized outreach pipeline. The machine is universal. A client is pure configuration. *B6 is just `$client`.*
 
-`SDK CEO` · `jwout` connector (9 verbs) · 6 stage skills · 5 departments · config-specialized clients
+`SDK CEO` · `jwout` connector (10 verbs) · 6 stage skills · 5 departments · config-specialized clients
 
 </div>
 
@@ -37,7 +37,7 @@ flowchart TB
     STAGES["outreach-source · write · teaser · deliver · replies · report"]
   end
   subgraph conn["connectors/ — CODE (external effects only)"]
-    OUT["outreach → jwout: pull · video · send · track · host · serve · dashboard · suppress · reply"]
+    OUT["outreach → jwout: pull · video · send · track · host · serve · dashboard · market · suppress · reply"]
   end
   subgraph ext["EXTERNAL SYSTEMS"]
     direction LR
@@ -75,7 +75,8 @@ The **only code** in the worker layer. Seven verbs, each one external effect. Cr
 | `track` | write the DB; record events; funnel report by variant/cohort | ✅ run-verified |
 | `host` | place an asset at a unique URL | ✅ run-verified |
 | `serve` | serve assets (`view`/GET) + tracked `click` → 302 + `/u` one-click unsubscribe | ✅ run-verified |
-| `dashboard` | operator read-view: funnel, per-contact pipeline, reply queue, gate status (localhost) | ✅ run-verified |
+| `dashboard` | read-view: `/` ops (funnel, pipeline, replies, gates) + `/business` exec (won/lost/potential, TAM→SAM→SOM, cost) | ✅ run-verified |
+| `market` | `refresh` → TAM/SAM snapshot from free Apollo search totals (SOM computed live from booked-rate) | client real · needs key |
 | `suppress` | opt-out list (CAN-SPAM): `add` / `check` (exit 2 if suppressed) | ✅ run-verified |
 | `reply` | read replies over IMAP | client real · needs creds |
 

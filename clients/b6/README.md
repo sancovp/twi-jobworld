@@ -31,5 +31,10 @@ from b6studios.com.
 8. **The three dedupe CSVs** → `dedupe/`
 9. **CAN-SPAM footer** (a real postal address + a working unsubscribe URL) → `client.json.compliance`. `outreach-write` appends it to every body; `outreach-deliver` refuses to send without it.
 
+**Optional (does not block sending):** `economics.avg_deal_value_usd` — the average
+value of a closed series. Setting it makes the business dashboard (`/business`)
+value the pipeline (won / SOM / TAM) in dollars; without it the dashboard shows
+counts only. Never fabricated.
+
 Source of these requirements: `~/b6-outreach-engine/SPEC.md` (§8, §9, §10) and
 `NEEDS-FROM-AVI.md`. Do not fabricate any of them.

@@ -63,6 +63,13 @@
         "unsubscribe_url": {"type": ["string", "null"], "description": "a working unsubscribe link"}
       }
     },
+    "economics": {
+      "type": "object",
+      "description": "Business-dashboard economics. avg_deal_value_usd lets the pipeline (won/SOM/TAM) be valued in dollars; null = the dashboard shows counts only (never a fabricated $).",
+      "properties": {
+        "avg_deal_value_usd": {"type": ["number", "null"], "description": "average value of one booked-and-closed deal (a sponsored/co-developed series)"}
+      }
+    },
     "env_profile": {"type": "string", "description": "which secret bundle (SMTP/IMAP/API keys) deployment loads for this client"}
   }
 }
