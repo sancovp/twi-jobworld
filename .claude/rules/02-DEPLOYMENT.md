@@ -33,10 +33,16 @@ Image deps added on top of the Debian base: **`jq`** (the `outreach-*` skills re
 `client.json` with it) and the SDK pip pins. Verified in-image: `jq` resolves and
 the skills' actual `jq` queries run against `clients/b6/client.json`.
 
-Run: `deploy/run-instance.sh <client> [instance] [port]` — loads
+Run: `deploy/run-instance.sh <client> [instance] [dashboard-port]` — loads
 `deploy/secrets.<client>.env` (gitignored), wires `JW_CLIENT`/`JW_CLIENT_DIR`/
 `JWOUT_DB`, and `docker run`s the image on a named data volume. Warns and runs
 dry if no secrets file is present.
+
+Four ports, all distinct and published: **JW dashboard** (8501), **API** (3847),
+**`jwout serve`** (8000, recipient-facing — view/click/unsubscribe), and the
+**`jwout dashboard`** (8787, operator funnel/contacts/replies/gates — published on
+host **loopback only**). The entrypoint starts both `serve` and `dashboard` in the
+background; their logs are `/jobworld_data/jwout-{serve,dashboard}.log`.
 
 ## How each layer reaches the instance
 

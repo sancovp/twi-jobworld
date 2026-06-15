@@ -34,7 +34,7 @@ CLIENT ($content)   ── instructions: template, rules, positioning, assets, d
 SKILL (procedure)   ── tells a worker: which CONNECTOR verbs to run, in what order, applying which CLIENT instructions
       │  calls
       ▼
-CONNECTOR (code)    ── the ONLY functions: external-effect verbs (pull · video · send · track · host · serve · suppress · reply)
+CONNECTOR (code)    ── the ONLY functions: external-effect verbs (pull · video · send · track · host · serve · dashboard · suppress · reply)
 ```
 
 - **CONNECTOR** = code, external effects only. Lives in `connectors/`.
@@ -98,7 +98,7 @@ flowchart TB
     DLV["outreach-deliver"]; RPL["outreach-replies"]; RPT["outreach-report"]
   end
   subgraph conn["connectors/ (CODE — external effects)"]
-    OUT["outreach (jwout): pull·video·send·track·host·serve·suppress·reply"]
+    OUT["outreach (jwout): pull·video·send·track·host·serve·dashboard·suppress·reply"]
   end
   subgraph ext["EXTERNAL SYSTEMS"]
     APOLLO["Apollo API"]; MINIMAX["MiniMax video"]; SMTP["SMTP / cold mailserver"]
@@ -141,7 +141,7 @@ sequenceDiagram
 |---|---|---|
 | `~/avi-jw/` | the deliverable (JW fork, SDK CEO done) | this file |
 | `~/avi-jw/connectors/` | CODE — external-effect connectors | `connectors/README.md` |
-| `~/avi-jw/connectors/outreach/` | the outreach connector (`jwout`, 8 verbs) | `connectors/outreach/README.md` |
+| `~/avi-jw/connectors/outreach/` | the outreach connector (`jwout`, 9 verbs) | `connectors/outreach/README.md` |
 | `~/avi-jw/skills/` | PROCEDURES — worker skills | `skills/_OUTREACH-SKILLS.md` |
 | `~/avi-jw/clients/` | CONTENT — `$client` configs | `clients/README.md` |
 | `~/avi-jw/clients/_schema/` | the `$client` contract | `clients/_schema/README.md` |

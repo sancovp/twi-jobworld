@@ -6,7 +6,7 @@
 
 A fork of [TWI JobWorld](#appendix--the-jobworld-base) whose CEO runs on the Claude Code SDK, plus a **worker layer** of connectors and skills that execute a full hyper-personalized outreach pipeline. The machine is universal. A client is pure configuration. *B6 is just `$client`.*
 
-`SDK CEO` · `jwout` connector (8 verbs) · 6 stage skills · 5 departments · config-specialized clients
+`SDK CEO` · `jwout` connector (9 verbs) · 6 stage skills · 5 departments · config-specialized clients
 
 </div>
 
@@ -37,7 +37,7 @@ flowchart TB
     STAGES["outreach-source · write · teaser · deliver · replies · report"]
   end
   subgraph conn["connectors/ — CODE (external effects only)"]
-    OUT["outreach → jwout: pull · video · send · track · host · serve · suppress · reply"]
+    OUT["outreach → jwout: pull · video · send · track · host · serve · dashboard · suppress · reply"]
   end
   subgraph ext["EXTERNAL SYSTEMS"]
     direction LR
@@ -75,6 +75,7 @@ The **only code** in the worker layer. Seven verbs, each one external effect. Cr
 | `track` | write the DB; record events; funnel report by variant/cohort | ✅ run-verified |
 | `host` | place an asset at a unique URL | ✅ run-verified |
 | `serve` | serve assets (`view`/GET) + tracked `click` → 302 + `/u` one-click unsubscribe | ✅ run-verified |
+| `dashboard` | operator read-view: funnel, per-contact pipeline, reply queue, gate status (localhost) | ✅ run-verified |
 | `suppress` | opt-out list (CAN-SPAM): `add` / `check` (exit 2 if suppressed) | ✅ run-verified |
 | `reply` | read replies over IMAP | client real · needs creds |
 
@@ -151,9 +152,10 @@ docker build -f Dockerfile.sdk -t avi-jw:latest .
 cp deploy/secrets.example.env deploy/secrets.b6.env   # then fill it
 
 # 3. Run an instance for a client (runs dry without secrets)
-deploy/run-instance.sh b6 b6-outreach 3847
+deploy/run-instance.sh b6                      # JW dashboard :8501 · outreach dashboard :8787 · API :3847 · serve :8000
 
 # 4. Drive it: the CEO uses run-outreach-campaign to orchestrate the departments
+#    Watch the campaign at the outreach dashboard: http://localhost:8787
 ```
 
 Local connector dev (no Docker):

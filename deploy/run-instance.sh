@@ -19,6 +19,7 @@ INSTANCE="${2:-${CLIENT}-outreach}"
 DASH_PORT="${3:-8501}"
 API_PORT="3847"
 SERVE_PORT="8000"
+OUTREACH_DASH_PORT="8787"
 IMAGE="${IMAGE:-avi-jw:latest}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -43,13 +44,14 @@ fi
 # Persisted instance + run state on a named volume.
 VOLUME="${INSTANCE}-data"
 
-echo "dashboard http://localhost:${DASH_PORT}  ·  API ${API_PORT}  ·  serve ${SERVE_PORT}  ·  client ${CLIENT}"
+echo "JW dashboard http://localhost:${DASH_PORT}  ·  outreach dashboard http://localhost:${OUTREACH_DASH_PORT}  ·  API ${API_PORT}  ·  serve ${SERVE_PORT}  ·  client ${CLIENT}"
 
 exec docker run --rm -it \
   --name "$INSTANCE" \
   -p "${DASH_PORT}:${DASH_PORT}" \
   -p "${API_PORT}:${API_PORT}" \
   -p "${SERVE_PORT}:${SERVE_PORT}" \
+  -p "127.0.0.1:${OUTREACH_DASH_PORT}:${OUTREACH_DASH_PORT}" \
   -v "${VOLUME}:/jobworld_data" \
   -e JOBWORLD_INSTANCE="$INSTANCE" \
   -e JOBWORLD_PORT="$DASH_PORT" \
@@ -59,5 +61,6 @@ exec docker run --rm -it \
   -e HOST_DIR="/jobworld_data/hosted" \
   -e HOST_BASE_URL="$HOST_BASE_URL" \
   -e JWOUT_SERVE_PORT="$SERVE_PORT" \
+  -e JWOUT_DASHBOARD_PORT="$OUTREACH_DASH_PORT" \
   $ENV_FILE_ARG \
   "$IMAGE"

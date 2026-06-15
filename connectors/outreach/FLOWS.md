@@ -15,21 +15,25 @@ flowchart TB
     VID["video.py — video (MiniMax async)"]
     SND["send.py — send (SMTP)"]
     HST["host.py — host (unique URL)"]
-    SRV["serve.py — serve (view + click)"]
+    SRV["serve.py — serve (view + click + /u unsubscribe)"]
+    DSH["dashboard.py — dashboard (read view)"]
     RPL["reply.py — reply (IMAP)"]
-    DBM["db.py — track + persisted state"]
+    DBM["db.py — track + suppressions + state"]
     MOD["models.py — Contact"]
   end
-  CLI --> SRC & VID & SND & HST & SRV & RPL & DBM
+  CLI --> SRC & VID & SND & HST & SRV & DSH & RPL & DBM
   SRC --> MOD
   DBM --> MOD
   SRV --> DBM
+  DSH --> DBM
   classDef code fill:#1b4,color:#fff
-  class CLI,SRC,VID,SND,HST,SRV,RPL,DBM,MOD code
+  class CLI,SRC,VID,SND,HST,SRV,DSH,RPL,DBM,MOD code
 ```
 
 `send`, `host`, `video`, `reply` have no internal deps (stdlib/requests only);
-`serve` reaches state through `db`; `source` and `db` share the `Contact` shape.
+`serve` and `dashboard` reach state through `db` (serve is recipient-facing on
+the public host; dashboard is operator-facing on localhost); `source` and `db`
+share the `Contact` shape.
 
 ## `pull` — Apollo two-step execution boundary
 

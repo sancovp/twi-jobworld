@@ -28,6 +28,13 @@ su -m ceo -s /bin/sh -c "export HOME=/home/ceo; HOST_DIR='$HOST_DIR' JWOUT_DB='$
   nohup jwout serve --port ${JWOUT_SERVE_PORT:-8000} --docroot '$HOST_DIR' --db '$JWOUT_DB' \
   >/jobworld_data/jwout-serve.log 2>&1 &" || true
 
+# 3. Operator dashboard (read-only funnel/contacts/replies/gates). Bound 0.0.0.0
+#    inside the container; run-instance publishes it on HOST loopback only.
+su -m ceo -s /bin/sh -c "export HOME=/home/ceo; JW_CLIENT='${JW_CLIENT:-}' \
+  nohup jwout dashboard --host 0.0.0.0 --port ${JWOUT_DASHBOARD_PORT:-8787} \
+  --db '$JWOUT_DB' --client-dir '${JW_CLIENT_DIR:-}' \
+  >/jobworld_data/jwout-dashboard.log 2>&1 &" || true
+
 # su -m preserves the runtime env (JOBWORLD_INSTANCE, MINIMAX_API_KEY, ...); HOME is forced
 # to ceo's. JW's real entrypoint is run unchanged, just as the right user.
 exec su -m ceo -s /bin/sh -c 'export HOME=/home/ceo; exec /usr/local/bin/entrypoint-jobworld.sh'
