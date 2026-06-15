@@ -37,15 +37,19 @@ You are the generator AND the linter — the rules are instructions, not code.
    destination is stored on the send row at deliver time (`--click-dest`), so the
    redirect target cannot be tampered with. (If `HOST_BASE_URL` is not set, use the
    raw calendar link and skip the token — clicks just won't be tracked.)
-5. **Append the CAN-SPAM footer** from `client.json.compliance`: a blank line,
-   then the client's `postal_address`, then an unsubscribe line pointing at
-   `unsubscribe_url`. Both are legally required on cold mail. If either is null
-   (NEEDS-FROM-<client>), DO NOT fabricate one — leave the body without a footer;
-   the deliver step will correctly refuse to send it. Example footer:
+5. **Append the CAN-SPAM footer**: a blank line, the client's
+   `compliance.postal_address`, then a working unsubscribe line. For the
+   unsubscribe link, prefer the **one-click tracked** link (it records the opt-out
+   so future sends are suppressed automatically): mint an unsub token and use
+   `${HOST_BASE_URL}/u/<unsub-token>`. If `HOST_BASE_URL` is not set, fall back to
+   the client's `compliance.unsubscribe_url`. The postal address is legally
+   required; if it is null (NEEDS-FROM-<client>), DO NOT fabricate one — leave the
+   body without a footer and the deliver step will correctly refuse to send.
+   Example footer:
    ```
    <blank line>
    B6 Studios, <postal_address>
-   Unsubscribe: <unsubscribe_url>
+   Unsubscribe: ${HOST_BASE_URL}/u/<unsub-token>
    ```
 6. **Self-check (you are the linter):** re-read the hard rules and verify the
    draft obeys all of them (length, no em/en dashes, no emojis, no fake urgency,
@@ -53,8 +57,9 @@ You are the generator AND the linter — the rules are instructions, not code.
    the CAN-SPAM footer is present**). Fix in place. Do NOT call any tool to do this.
 7. **Emit** the subject on the first line and the body after, written to
    `copy/<contact-email>.touch<touch>.txt`; the video prompt (if any) to
-   `copy/<contact-email>.touch<touch>.vprompt.txt`; and the click token (if
-   minted) to `copy/<contact-email>.touch<touch>.token` for the deliver step.
+   `copy/<contact-email>.touch<touch>.vprompt.txt`; the click token (if minted)
+   to `copy/<contact-email>.touch<touch>.token`; and the unsub token to
+   `copy/<contact-email>.touch<touch>.unsub` for the deliver step.
 
 ## Output
 

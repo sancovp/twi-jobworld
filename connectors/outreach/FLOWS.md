@@ -123,6 +123,21 @@ sequenceDiagram
   SV-->>R: 302 Location: <stored dest>  (unknown token / no dest → 404)
 ```
 
+## `serve` /u + `suppress` — opt-out boundary (CAN-SPAM)
+
+```mermaid
+sequenceDiagram
+  participant R as Recipient browser
+  participant SV as jwout serve
+  participant DB as SQLite
+  R->>SV: GET /u/<token>   (one-click unsubscribe from the footer)
+  SV->>DB: SELECT to_email FROM sends WHERE unsub_token=token
+  DB-->>SV: email (if any)
+  SV->>DB: INSERT suppressions(email, reason=unsubscribe)
+  SV-->>R: 200 "You're unsubscribed" (page shown even for unknown token — no leak)
+  Note over DB: deliver gate runs `jwout suppress check <email>` (exit 2 = skip);<br/>replies skill runs `jwout suppress add` for "remove me" / hostile
+```
+
 ## `reply` — IMAP read → classify → track boundary
 
 ```mermaid

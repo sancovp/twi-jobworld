@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS sends (
     asset_url TEXT,
     click_token TEXT,
     click_dest TEXT,
+    unsub_token TEXT,
     sent_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS events (
@@ -38,13 +39,20 @@ CREATE TABLE IF NOT EXISTS events (
     type TEXT NOT NULL,
     occurred_at TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS suppressions (
+    email TEXT PRIMARY KEY,
+    reason TEXT,           -- unsubscribe | hostile | bounce | manual
+    source TEXT,           -- self-service | reply | api | ...
+    created_at TEXT DEFAULT (datetime('now'))
+);
 """
 
 
 # Columns added to `sends` after the first release. CREATE TABLE IF NOT EXISTS
 # will NOT add these to a pre-existing table, so we ensure them explicitly —
 # otherwise the first send/click against an old DB raises "no such column".
-_SENDS_ADDED_COLUMNS = ["asset_url TEXT", "click_token TEXT", "click_dest TEXT"]
+_SENDS_ADDED_COLUMNS = ["asset_url TEXT", "click_token TEXT", "click_dest TEXT",
+                        "unsub_token TEXT"]
 
 
 def connect(db_path: Path = DB_PATH) -> sqlite3.Connection:
@@ -90,15 +98,33 @@ def load_contacts(conn: sqlite3.Connection) -> list[Contact]:
 def record_send(conn: sqlite3.Connection, *, to_email: str, subject: str,
                 body: str, brand: str = "", touch: int = 1,
                 variant: str = "", cohort: str = "", asset_url: str = "",
-                click_token: str = "", click_dest: str = "") -> int:
+                click_token: str = "", click_dest: str = "", unsub_token: str = "") -> int:
     cur = conn.execute(
         "INSERT INTO sends (to_email, brand, subject, body, touch, variant, "
-        "cohort, asset_url, click_token, click_dest) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "cohort, asset_url, click_token, click_dest, unsub_token) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         (to_email, brand, subject, body, touch, variant, cohort, asset_url,
-         click_token, click_dest),
+         click_token, click_dest, unsub_token),
     )
     conn.commit()
     return cur.lastrowid
+
+
+def record_suppression(conn: sqlite3.Connection, email: str,
+                       reason: str = "manual", source: str = "") -> None:
+    """Opt-out list. CAN-SPAM requires honoring these; deliver checks it."""
+    conn.execute(
+        "INSERT OR REPLACE INTO suppressions (email, reason, source) VALUES (?,?,?)",
+        (email.lower().strip(), reason, source),
+    )
+    conn.commit()
+
+
+def is_suppressed(conn: sqlite3.Connection, email: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM suppressions WHERE email=?", (email.lower().strip(),)
+    ).fetchone()
+    return row is not None
 
 
 def record_event(conn: sqlite3.Connection, send_id: int, event_type: str) -> None:

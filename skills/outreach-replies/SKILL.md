@@ -30,14 +30,22 @@ and record the outcome.
    jwout track event <send_id> reply        # always, for any human reply
    jwout track event <send_id> booked       # additionally, if they booked
    ```
-4. **Route** anything human-worthy (interested, booked, hostile, unsubscribe) to
-   the manager / human queue. Honor unsubscribe and hostile immediately:
-   add the brand/domain to the client's `dedupe/` so it is never contacted again.
+4. **Honor opt-outs immediately** (CONNECTOR — the opt-out list): for any
+   unsubscribe or hostile reply, suppress the sender so no future touch reaches
+   them:
+   ```bash
+   jwout suppress add "<reply-from-email>" --reason unsubscribe --source reply
+   # or --reason hostile
+   ```
+   (A self-service `/u/<token>` click already suppresses automatically; this
+   covers people who reply "remove me" in words instead.)
+5. **Route** anything human-worthy (interested, booked, hostile, unsubscribe) to
+   the manager / human queue.
 
 ## Output
 
-Reply events recorded against sends; a routed list of human-worthy replies;
-dedupe updated for opt-outs.
+Reply events recorded against sends; opt-outs suppressed; a routed list of
+human-worthy replies.
 
 ## Layer notes
 

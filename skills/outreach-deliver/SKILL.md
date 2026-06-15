@@ -21,6 +21,11 @@ exactly the subject and body it is given.
 
 1. The contact survived `outreach-source` dedupe (not on any exclusion list, not
    the primary domain).
+1b. **The contact is not suppressed** (CONNECTOR — checks the opt-out list):
+   ```bash
+   jwout suppress check "<contact-email>"   # exit 2 => suppressed, SKIP this contact
+   ```
+   Never email anyone who has unsubscribed or been marked hostile.
 2. The body already contains the CAN-SPAM footer (a real postal address and a
    working unsubscribe line). If the client has not provided those, do not send.
 3. At least one `sending.domains[]` entry has `warmup_status == "ready"` and is
@@ -47,9 +52,12 @@ exactly the subject and body it is given.
      --brand "<brand>" --touch <n> --variant "<variant>" --cohort "<cohort>" \
      --asset-url "<hosted teaser URL or empty>" \
      --click-token "<contents of copy/<email>.touch<n>.token, if any>" \
-     --click-dest "$(jq -r .calendar_url "$JW_CLIENT_DIR/client.json")"
+     --click-dest "$(jq -r .calendar_url "$JW_CLIENT_DIR/client.json")" \
+     --unsub-token "<contents of copy/<email>.touch<n>.unsub>"
    # prints: send_id=<N>
    ```
+   The `--unsub-token` must match the token in the body's `/u/<token>` unsubscribe
+   link so serve can suppress this exact recipient on one click.
    The `--click-token` must match the token in the body's tracked CTA link
    (`${HOST_BASE_URL}/c/<token>`, from `outreach-write`); `--click-dest` is the URL
    `serve` redirects that token to (the calendar link). The destination is stored

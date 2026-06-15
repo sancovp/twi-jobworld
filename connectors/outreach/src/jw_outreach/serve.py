@@ -13,8 +13,11 @@ so repeat views do not inflate the rate.
 It also handles tracked-link clicks: GET /c/<token> records a `click` and 302s to
 the destination STORED on the send row (sends.click_dest). The destination never
 comes from the request, so the link cannot be tampered into an open redirect.
+
+And one-click unsubscribe: GET /u/<token> records a suppression for the recipient
+behind that token (sends.unsub_token -> to_email) and shows a confirmation page.
     HOST_DIR   (default data/hosted)  — docroot
-    JWOUT_DB                          — where view/click events are recorded
+    JWOUT_DB                          — where view/click events + suppressions are written
 """
 
 import mimetypes
@@ -28,6 +31,12 @@ from . import db
 
 _UID_RE = re.compile(r"^/([0-9a-f]{6,})/")
 _CLICK_RE = re.compile(r"^/c/([A-Za-z0-9._-]+)$")
+_UNSUB_RE = re.compile(r"^/u/([A-Za-z0-9._-]+)$")
+
+_UNSUB_PAGE = (b"<!doctype html><meta charset=utf-8><title>Unsubscribed</title>"
+               b"<body style='font:16px system-ui;max-width:32rem;margin:4rem auto'>"
+               b"<h1>You're unsubscribed.</h1><p>You will not receive further emails "
+               b"from this sender. No further action is needed.</p></body>")
 
 
 def _connect(db_path):
@@ -67,6 +76,22 @@ def _click_dest(token: str, db_path=None) -> str | None:
         conn.close()
 
 
+def _unsubscribe(token: str, db_path=None) -> None:
+    """Record a suppression for the recipient behind this unsubscribe token.
+    Idempotent; unknown token is a silent no-op (the page is shown regardless,
+    so we never reveal whether a token is valid)."""
+    conn = _connect(db_path)
+    try:
+        row = conn.execute(
+            "SELECT to_email FROM sends WHERE unsub_token=? ORDER BY id DESC LIMIT 1",
+            (token,),
+        ).fetchone()
+        if row and row[0]:
+            db.record_suppression(conn, row[0], reason="unsubscribe", source="self-service")
+    finally:
+        conn.close()
+
+
 def make_handler(docroot: Path, db_path=None):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):  # quiet; events go to the DB
@@ -89,6 +114,19 @@ def make_handler(docroot: Path, db_path=None):
                     self.send_response(302); self.send_header("Location", dest); self.end_headers()
                 else:
                     self.send_response(404); self.end_headers()
+                return
+            # one-click unsubscribe: /u/<token> -> record suppression, show page
+            um = _UNSUB_RE.match(split.path)
+            if um:
+                try:
+                    _unsubscribe(um.group(1), db_path)
+                except Exception:
+                    pass  # always show the confirmation; never leak token validity
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(_UNSUB_PAGE)))
+                self.end_headers()
+                self.wfile.write(_UNSUB_PAGE)
                 return
             m = _UID_RE.match(self.path)
             rel = self.path.lstrip("/").split("?", 1)[0]

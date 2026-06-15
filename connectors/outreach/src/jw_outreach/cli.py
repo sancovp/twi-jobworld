@@ -3,12 +3,13 @@
     jwout pull   --titles a,b --seniorities director,vp --status verified --domains x.com,y.com --limit N
     jwout video  "<prompt>" --out teaser.mp4 [--model M]
     jwout send   --to a@b.com --subject S (--body TEXT | --body-file F) --from f@dom [--from-name N] [--reply-to R]
-                 [--brand B --touch N --variant V --cohort C --asset-url U --click-token T --click-dest URL]  (records unless --no-record)
-    jwout track  event <send_id> <type>
-    jwout track  report [--cost FLOAT]
-    jwout host   <file> [--uid UID]
-    jwout serve  [--host H] [--port N] [--docroot D]   (GET /<uid>/<file> -> view; GET /c/<token>?u=URL -> click+302)
-    jwout reply  [--folder INBOX] [--all] [--limit N] [--json]
+                 [--brand B --touch N --variant V --cohort C --asset-url U --click-token T --click-dest URL --unsub-token UT]  (records unless --no-record)
+    jwout track    event <send_id> <type>
+    jwout track    report [--cost FLOAT]
+    jwout host     <file> [--uid UID]
+    jwout serve    [--host H] [--port N] [--docroot D]  (/<uid>/<file>->view; /c/<token>->click+302 stored dest; /u/<token>->unsubscribe)
+    jwout suppress add <email> [--reason R] | check <email>  (opt-out list; check exits 2 if suppressed)
+    jwout reply    [--folder INBOX] [--all] [--limit N] [--json]
 
 Every verb does something the LLM cannot do by emitting tokens. Copy, rules,
 templates and dedupe lists are NOT here — they are instructions the LLM applies.
@@ -78,7 +79,8 @@ def cmd_send(args):
     sid = db.record_send(conn, to_email=args.to, subject=args.subject, body=body,
                          brand=args.brand, touch=args.touch, variant=args.variant,
                          cohort=args.cohort, asset_url=args.asset_url,
-                         click_token=args.click_token, click_dest=args.click_dest)
+                         click_token=args.click_token, click_dest=args.click_dest,
+                         unsub_token=args.unsub_token)
     print(f"sent to {args.to}; send_id={sid}")
 
 
@@ -106,6 +108,22 @@ def cmd_host(args):
 def cmd_serve(args):
     serve.serve(host=args.host, port=args.port, docroot=args.docroot or None,
                 db_path=args.db or None)
+
+
+# ---- suppress --------------------------------------------------------------
+
+def cmd_suppress_add(args):
+    conn = _conn(args)
+    db.record_suppression(conn, args.email, reason=args.reason, source=args.source)
+    print(f"suppressed {args.email} (reason={args.reason})")
+
+
+def cmd_suppress_check(args):
+    conn = _conn(args)
+    if db.is_suppressed(conn, args.email):
+        print(f"SUPPRESSED: {args.email} is on the opt-out list; do not send.")
+        sys.exit(2)
+    print(f"CLEAR: {args.email} is not suppressed.")
 
 
 # ---- reply ----------------------------------------------------------------
@@ -169,6 +187,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="the token embedded in tracked links in the body; serve /c/<token> records a click")
     p.add_argument("--click-dest", default="",
                    help="the destination serve /c/<token> redirects to (e.g. the calendar URL); stored on the send, never taken from the request")
+    p.add_argument("--unsub-token", default="",
+                   help="the token in the body's unsubscribe link; serve /u/<token> suppresses this recipient")
     p.add_argument("--no-record", action="store_true", help="send without writing to the DB")
     _add_db(p)
     p.set_defaults(func=cmd_send)
@@ -190,12 +210,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--uid", default="")
     p.set_defaults(func=cmd_host)
 
-    p = top.add_parser("serve", help="serve hosted assets; record a view per unique-path GET")
+    p = top.add_parser("serve", help="serve hosted assets; record view/click; one-click unsubscribe")
     p.add_argument("--host", default="0.0.0.0")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--docroot", default="")
     _add_db(p)
     p.set_defaults(func=cmd_serve)
+
+    p_sup = top.add_parser("suppress", help="opt-out list (CAN-SPAM): add / check")
+    sub = p_sup.add_subparsers(dest="verb", required=True)
+    pa = sub.add_parser("add", help="add an email to the opt-out list")
+    pa.add_argument("email")
+    pa.add_argument("--reason", default="manual", help="unsubscribe|hostile|bounce|manual")
+    pa.add_argument("--source", default="api")
+    _add_db(pa)
+    pa.set_defaults(func=cmd_suppress_add)
+    pc = sub.add_parser("check", help="is this email suppressed? exit 2 if yes")
+    pc.add_argument("email")
+    _add_db(pc)
+    pc.set_defaults(func=cmd_suppress_check)
 
     p = top.add_parser("reply", help="read replies over IMAP")
     p.add_argument("--folder", default="INBOX")

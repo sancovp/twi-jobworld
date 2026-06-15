@@ -1,6 +1,6 @@
 # `connectors/outreach` — the `jwout` connector
 
-The universal outreach connector. Seven external-effect verbs and nothing else.
+The universal outreach connector. Eight external-effect verbs and nothing else.
 No copy logic, no rules engine, no templates — those are instructions the LLM
 applies from a `clients/` config. (See `../../.claude/rules/00-WORKER-LAYER-ARCHITECTURE.md`.)
 
@@ -11,7 +11,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 # gives the `jwout` console script
 ```
 
-## The seven verbs
+## The eight verbs
 
 | verb | external effect | key env vars | run-verified? |
 |---|---|---|---|
@@ -20,7 +20,8 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | `send` | SMTP delivery | `SMTP_HOST/PORT/USER/PASS`, `SMTP_STARTTLS` | ✅ ran against local SMTP |
 | `track` | write DB; record events; report | `JWOUT_DB` | ✅ ran (event + report) |
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
-| `serve` | HTTP-serve assets (`view` per GET) + redirect tracked links (`click`) | `HOST_DIR`, `JWOUT_DB` | ✅ ran (200 serve + view; 302 + click recorded; traversal 404; bad dest 400) |
+| `serve` | HTTP-serve assets (`view`/GET) + tracked-link `click` redirect (stored dest) + `/u/<token>` one-click unsubscribe | `HOST_DIR`, `JWOUT_DB` | ✅ ran (serve+view; click→302; traversal 404; /u→suppress+200) |
+| `suppress` | opt-out list: `add <email>` / `check <email>` (exit 2 if suppressed) | `JWOUT_DB` | ✅ ran (add/check + /u recording) |
 | `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
 
 ## Usage
@@ -31,12 +32,15 @@ jwout pull   --titles "CMO,VP Marketing" --seniorities director,vp --status veri
 jwout video  "9s teaser: <prompt>" --out teaser.mp4 [--model MiniMax-Hailuo-02]
 jwout host   teaser.mp4                       # → https://<base>/<uid>/teaser.mp4
 jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --from-name "Name" \
-             [--brand B --touch 1 --variant video --cohort engine --asset-url URL --click-token TOK] [--no-record]
-             # --click-token must match the token embedded in the body's tracked links (serve /c/<TOK> -> click)
-jwout track  event <send_id> delivered|open|click|view|reply|booked|bounced
-jwout track  report [--cost 0.50]
-jwout serve  [--host 0.0.0.0] [--port 8000] [--docroot DIR]   # long-running; /<uid>/<file> -> view ; /c/<tok>?u=URL -> click+302
-jwout reply  [--folder INBOX] [--all] [--limit 50] [--json]
+             [--brand B --touch 1 --variant video --cohort engine --asset-url URL \
+              --click-token TOK --click-dest CAL_URL --unsub-token UTOK] [--no-record]
+             # click-token/unsub-token match the body's /c/<tok> and /u/<utok> links; click-dest is stored, never from the request
+jwout track   event <send_id> delivered|open|click|view|reply|booked|bounced
+jwout track   report [--cost 0.50]
+jwout serve   [--host 0.0.0.0] [--port 8000] [--docroot DIR]  # long-running; /<uid>/<file>→view ; /c/<tok>→click+302(stored dest) ; /u/<tok>→suppress+page
+jwout suppress add <email> [--reason unsubscribe|hostile|bounce|manual] [--source ...]
+jwout suppress check <email>                  # exit 2 if suppressed (deliver gate)
+jwout reply   [--folder INBOX] [--all] [--limit 50] [--json]
 ```
 
 Exit/return contract: verbs print their result (URL, `send_id=N`, report text)
