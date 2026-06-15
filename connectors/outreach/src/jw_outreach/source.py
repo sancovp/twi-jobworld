@@ -65,10 +65,14 @@ def search_total(
     seniorities: list[str] | None = None,
     email_statuses: list[str] | None = None,
     organization_domains: list[str] | None = None,
+    employee_ranges: list[str] | None = None,
+    industries: list[str] | None = None,
     api_key: str | None = None,
 ) -> int:
     """How many people match these filters — `pagination.total_entries` from a
-    free 1-result search. Used for TAM/SAM sizing without spending credits."""
+    free 1-result search. Used for TAM/SAM sizing + cube sweeps (no credits).
+    employee_ranges = Apollo `organization_num_employees_ranges` (e.g. "51,200");
+    industries = `q_organization_keyword_tags`."""
     api_key = api_key or os.environ["APOLLO_API_KEY"]
     payload: dict = {"per_page": 1, "page": 1}
     if titles:
@@ -79,7 +83,36 @@ def search_total(
         payload["contact_email_status"] = email_statuses
     if organization_domains:
         payload["q_organization_domains_list"] = organization_domains
+    if employee_ranges:
+        payload["organization_num_employees_ranges"] = employee_ranges
+    if industries:
+        payload["q_organization_keyword_tags"] = industries
     resp = requests.post(f"{APOLLO_BASE}/mixed_people/api_search",
+                         json=payload, headers=_headers(api_key), timeout=30)
+    resp.raise_for_status()
+    return int(resp.json().get("pagination", {}).get("total_entries", 0))
+
+
+def org_total(
+    *,
+    employee_ranges: list[str] | None = None,
+    industries: list[str] | None = None,
+    organization_domains: list[str] | None = None,
+    api_key: str | None = None,
+) -> int:
+    """How many ORGANIZATIONS (accounts) match — for an account-level TAM that is
+    comparable to Census establishment counts. Free (per_page=1 count read).
+    Endpoint follows Apollo's mixed_companies search; verify the field names
+    against a live call before trusting at volume (same caution as the people search)."""
+    api_key = api_key or os.environ["APOLLO_API_KEY"]
+    payload: dict = {"per_page": 1, "page": 1}
+    if employee_ranges:
+        payload["organization_num_employees_ranges"] = employee_ranges
+    if industries:
+        payload["q_organization_keyword_tags"] = industries
+    if organization_domains:
+        payload["q_organization_domains_list"] = organization_domains
+    resp = requests.post(f"{APOLLO_BASE}/mixed_companies/api_search",
                          json=payload, headers=_headers(api_key), timeout=30)
     resp.raise_for_status()
     return int(resp.json().get("pagination", {}).get("total_entries", 0))

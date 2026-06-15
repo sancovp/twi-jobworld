@@ -17,9 +17,10 @@ flowchart TB
     HST["host.py — host (unique URL)"]
     SRV["serve.py — serve (view + click + /u unsubscribe)"]
     DSH["dashboard.py — dashboard (ops / business read views)"]
-    MKT["market.py — market (TAM/SAM + business metrics)"]
+    MKT["market.py — market (TAM/SAM/cube + business metrics)"]
+    CEN["census.py — CBP cross-check (independent denominator)"]
     RPL["reply.py — reply (IMAP)"]
-    DBM["db.py — track + suppressions + market + state"]
+    DBM["db.py — track + suppressions + market + fit + state"]
     MOD["models.py — Contact"]
   end
   CLI --> SRC & VID & SND & HST & SRV & DSH & MKT & RPL & DBM
@@ -27,9 +28,9 @@ flowchart TB
   DBM --> MOD
   SRV --> DBM
   DSH --> DBM & MKT
-  MKT --> DBM & SRC
+  MKT --> DBM & SRC & CEN
   classDef code fill:#1b4,color:#fff
-  class CLI,SRC,VID,SND,HST,SRV,DSH,MKT,RPL,DBM,MOD code
+  class CLI,SRC,VID,SND,HST,SRV,DSH,MKT,CEN,RPL,DBM,MOD code
 ```
 
 `send`, `host`, `video`, `reply` have no internal deps (stdlib/requests only);
@@ -46,13 +47,17 @@ sequenceDiagram
   participant CLI as jwout market refresh
   participant AP as Apollo
   participant DB as SQLite
-  W->>CLI: market refresh (reads $client targeting)
+  participant CB as Census CBP
+  W->>CLI: market refresh (reads whole $client)
   CLI->>AP: search_total(titles+seniorities)         %% TAM — all ICP decision-makers
   AP-->>CLI: pagination.total_entries (FREE, no credits)
   CLI->>AP: search_total(+ verified email status)    %% SAM — reachable subset
-  AP-->>CLI: total_entries
-  CLI->>DB: record_market(tam, sam)
-  Note over DB: dashboard /business reads the snapshot; SOM = SAM × live booked-rate (sharpens with data)
+  CLI->>AP: search_total ×(per seniority / employee-band / industry)  %% the cube, FREE
+  CLI->>AP: org_total(firmographics)                 %% account-level Apollo TAM
+  CLI->>CB: establishment_count(NAICS × size)        %% independent denominator (needs free key)
+  CB-->>CLI: establishments
+  CLI->>DB: record_market(tam, sam, breakdown JSON)
+  Note over DB: /business shows qualified TAM (×fit-rate), account TAM RANGE (Apollo vs Census), the cube; SOM = SAM × live booked-rate
 ```
 
 ## `pull` — Apollo two-step execution boundary

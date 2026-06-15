@@ -363,15 +363,32 @@ def render_business(conn, client_dir):
             qual = ("<p class=dim style='margin-top:10px'>Run the <code>outreach-qualify</code> "
                     "skill to LLM-score the pulled accounts against the client ICP — turns the raw "
                     "Apollo count into a <b>qualified</b> TAM (the count alone over-states the market).</p>")
-        cube = m["by_seniority"] or {}
-        cube_html = ("<p class=dim style='margin-top:6px'>by seniority (free sweep): "
-                     + " · ".join(f"{_esc(k)} {v:,}" for k, v in cube.items()) + "</p>") if cube else ""
+        # account-level TAM RANGE from independent denominators (Apollo vs Census)
+        org_tam, census_count, rng = m["org_tam"], m["census_count"], m["account_range"]
+        if rng:
+            range_html = (f"<p style='margin-top:10px'>TAM (accounts): "
+                          f"<b>{rng[0]:,} – {rng[1]:,}</b> "
+                          f"<span class=dim>Apollo orgs {org_tam:,} vs Census {census_count:,} "
+                          f"({_esc(m['census_basis'] or '')}) — an independent bracket, not one inflated number</span></p>")
+        elif org_tam is not None:
+            range_html = (f"<p style='margin-top:10px'>TAM (accounts, Apollo): <b>{org_tam:,}</b> orgs "
+                          f"<span class=dim>· set <code>market_crosscheck.naics</code> + a free "
+                          f"<code>CENSUS_API_KEY</code> for an independent Census cross-check (a range)</span></p>")
+        else:
+            range_html = ""
+        # cube: seniority / employee-band / industry (all free)
+        def cube_line(label, d):
+            return (f"<p class=dim style='margin-top:6px'>by {label} (free sweep): "
+                    + " · ".join(f"{_esc(k)} {v:,}" for k, v in d.items()) + "</p>") if d else ""
+        cube_html = (cube_line("seniority", m["by_seniority"] or {})
+                     + cube_line("employee band", m["by_employee"] or {})
+                     + cube_line("industry", m["by_industry"] or {}))
         market_block = (
             bars
             + f"<p class=dim style='margin-top:8px'>snapshot {_esc(m['market_at'])} · "
               f"coverage {(_pct(m['sent'], m['sam']) if m['sam'] else '—')} of SAM contacted · "
               f"SOM sharpens as more sends land</p>"
-            + cube_html + qual)
+            + range_html + cube_html + qual)
 
     deal_line = (f"deal value <b>{_money(deal)}</b> — pipeline shown in $"
                  if deal is not None else

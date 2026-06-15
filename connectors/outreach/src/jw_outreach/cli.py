@@ -145,8 +145,16 @@ def cmd_market_refresh(args):
         sys.exit("set --client-dir or JW_CLIENT_DIR (need the targeting for TAM/SAM)")
     client = json.loads((Path(client_dir) / "client.json").read_text())
     conn = _conn(args)
-    res = market.refresh(conn, client.get("targeting") or {})
-    print(f"market snapshot: TAM {res['tam']:,} decision-makers · SAM {res['sam']:,} reachable")
+    res = market.refresh(conn, client)
+    line = f"market snapshot: TAM {res['tam']:,} decision-makers · SAM {res['sam']:,} reachable"
+    if res.get("org_tam") is not None:
+        line += f" · Apollo accounts {res['org_tam']:,}"
+    cen = res.get("census")
+    if isinstance(cen, dict) and "count" in cen:
+        line += f" · Census {cen['count']:,} establishments"
+    elif isinstance(cen, dict) and "error" in cen:
+        line += f" · Census: {cen['error']}"
+    print(line)
 
 
 # ---- suppress --------------------------------------------------------------

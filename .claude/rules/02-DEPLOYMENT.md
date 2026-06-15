@@ -87,7 +87,8 @@ sequenceDiagram
 
 ## Secret bundle (per `env_profile`) — see `deploy/secrets.example.env`
 
-`APOLLO_API_KEY` · `SMTP_HOST/PORT/USER/PASS` · `IMAP_HOST/PORT/USER/PASS` ·
+`APOLLO_API_KEY` · `CENSUS_API_KEY` (free, market cross-check) · `SMTP_HOST/PORT/USER/PASS` ·
+`IMAP_HOST/PORT/USER/PASS` ·
 `HOST_DIR` / `HOST_BASE_URL`. Never commit real secrets; `deploy/secrets.*.env`
 is gitignored (only `secrets.example.env` is tracked).
 

@@ -29,6 +29,16 @@
   "economics": {
     "avg_deal_value_usd": null
   },
+  "cube": {
+    "employee_ranges": ["51,200", "201,500", "501,1000", "1001,5000", "5001,10000"],
+    "industries": ["food & beverage", "apparel", "beauty", "consumer goods", "retail"]
+  },
+  "market_crosscheck": {
+    "naics": ["311", "312", "315", "3254", "448"],
+    "empszes": "001",
+    "geo": "us",
+    "_note": "consumer-brand NAICS (food/beverage/apparel/toiletries/clothing-retail) as a STARTER approximation of the B6 ICP — Avi/ops should refine which NAICS truly match."
+  },
   "env_profile": "b6",
   "_needs_from_avi": {
     "compliance": "a real physical postal address and a working unsubscribe URL for the CAN-SPAM footer. outreach-write appends them to every body; the deliver step refuses to send without them.",

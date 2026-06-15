@@ -70,6 +70,23 @@
         "avg_deal_value_usd": {"type": ["number", "null"], "description": "average value of one booked-and-closed deal (a sponsored/co-developed series)"}
       }
     },
+    "cube": {
+      "type": "object",
+      "description": "Dimensions `market refresh` sweeps with FREE Apollo counts to decompose TAM/SAM. All optional; seniorities are always swept from targeting.",
+      "properties": {
+        "employee_ranges": {"type": "array", "items": {"type": "string"}, "description": "Apollo organization_num_employees_ranges, e.g. \"51,200\""},
+        "industries": {"type": "array", "items": {"type": "string"}, "description": "Apollo q_organization_keyword_tags, e.g. \"food & beverage\""}
+      }
+    },
+    "market_crosscheck": {
+      "type": "object",
+      "description": "Independent denominator (US Census CBP) to bracket Apollo's inflated count. Needs a free CENSUS_API_KEY at run time. The NAICS set is the client's approximation of the ICP — refine it.",
+      "properties": {
+        "naics": {"type": "array", "items": {"type": "string"}, "description": "NAICS codes approximating the ICP, e.g. [\"311\",\"312\"]"},
+        "empszes": {"type": "string", "description": "CBP employee-size-band code (001 = all)"},
+        "geo": {"type": "string", "description": "\"us\" or a 2-digit state FIPS"}
+      }
+    },
     "env_profile": {"type": "string", "description": "which secret bundle (SMTP/IMAP/API keys) deployment loads for this client"}
   }
 }

@@ -22,7 +22,7 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
 | `serve` | HTTP-serve assets (`view`/GET) + tracked-link `click` redirect (stored dest) + `/u/<token>` one-click unsubscribe | `HOST_DIR`, `JWOUT_DB` | ✅ ran (serve+view; click→302; traversal 404; /u→suppress+200) |
 | `dashboard` | read-view, two pages: `/` ops (funnel/contacts/replies/gates) + `/business` exec (won/lost/potential, TAM→SAM→SOM, cost, revenue stub); localhost | `JWOUT_DB`, `JW_CLIENT_DIR` | ✅ ran (both routes; $ math; empty + no-snapshot states) |
-| `market` | `refresh` → snapshot TAM (all ICP decision-makers) + SAM (reachable) + per-seniority cube via FREE Apollo search totals | `APOLLO_API_KEY`, `JW_CLIENT_DIR` | client real; needs key |
+| `market` | `refresh` → TAM/SAM + cube (seniority×employee×industry) via FREE Apollo counts + account-level Apollo org count + Census CBP cross-check → a TAM **range** | `APOLLO_API_KEY`, `CENSUS_API_KEY` (free), `JW_CLIENT_DIR` | client real; needs keys |
 | `qualify` | `set <email> --tier --score --reason` / `summary` — store LLM ICP fit scores → qualified TAM | `JWOUT_DB` | ✅ ran (set/summary; qualified-TAM math) |
 | `suppress` | opt-out list: `add <email>` / `check <email>` (exit 2 if suppressed) | `JWOUT_DB` | ✅ ran (add/check + /u recording) |
 | `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
@@ -92,9 +92,10 @@ flowchart LR
 
 ## Module map
 
-`cli.py` (verb wiring) → `source.py` (pull) · `video.py` · `send.py` ·
-`db.py` (track + persisted state) · `host.py` · `serve.py` · `reply.py` ·
-`models.py` (Contact).
+`cli.py` (verb wiring) → `source.py` (pull + free counts) · `video.py` · `send.py` ·
+`db.py` (track + persisted state) · `host.py` · `serve.py` · `dashboard.py` ·
+`market.py` (TAM/SAM/cube + business metrics) · `census.py` (CBP cross-check) ·
+`reply.py` · `models.py` (Contact).
 
 ## Diagrams
 

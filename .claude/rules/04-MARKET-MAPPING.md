@@ -21,10 +21,18 @@ the cheap primitive; the **qualified** count is the real TAM.
 
 | GENERAL | SPECIFIC (B6) | CODE |
 |---|---|---|
-| size the market | ICP targeting filters | `jwout market refresh` → free Apollo `search_total` (TAM, SAM, + per-seniority cube) |
+| size the market | ICP targeting filters | `jwout market refresh` → free Apollo `search_total` (TAM, SAM, + cube: seniority × employee-band × industry) |
+| cross-check the count | `market_crosscheck.naics` + `cube` | free Apollo `org_total` (accounts) + Census CBP `establishment_count` → a **TAM range**, not one inflated number |
 | qualify the market | `clients/b6/icp.md` rubric | *(none — the LLM scores via `outreach-qualify`)* |
 | store the score | — | `jwout qualify set <email> --tier --score --reason` |
-| value + show it | `economics.avg_deal_value_usd` | `dashboard /business` (qualified TAM = raw × fit-rate) |
+| value + show it | `economics.avg_deal_value_usd` | `dashboard /business` (qualified TAM = raw × fit-rate; account-level TAM range) |
+
+The raw Apollo count is an upper bound, so we report TAM two ways: the **qualified
+TAM** (people count × LLM good-fit rate) and an **account-level range** bracketed by
+two independent denominators — Apollo's org count and the US Census CBP establishment
+count (gated on a free `CENSUS_API_KEY`; no key → the dashboard says "connect Census",
+never a fabricated number). The free `search_total` is also swept across a
+seniority × employee-band × industry cube to decompose the market at zero credit cost.
 
 - **The rubric is client config** (`icp.md`) — instruction. **The scoring is the LLM**
   (`outreach-qualify`) — instruction. **The count, the storage, the rate are code**
@@ -70,12 +78,14 @@ sequenceDiagram
 
 ## Honest gaps (not built — would be the next real steps)
 
-- Cross-checking the Apollo count against an **independent denominator** (Census CBP /
-  TheCompaniesAPI `/count`) to report TAM as a *range* — Apollo alone over-counts.
 - A **two-table accounts ⟂ contacts** split (enrich once per domain) for cost at scale.
 - **Batches API (Haiku)** bulk-scoring of the whole pulled universe (~$5 / 10k) before
-  the Sonnet deep-research pass. These are scale optimizations, deferred until there's
-  volume — same "production-later" discipline as the WSGI note.
+  the Sonnet deep-research pass.
+
+These are scale optimizations, deferred until there's volume — same "production-later"
+discipline as the WSGI note. (The Census cross-check + the qualified count + the cube
+are **built**; the only caveat is the Census + Apollo calls need their free keys, like
+every other API client here.)
 
 ## Sources
 
