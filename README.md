@@ -41,7 +41,7 @@ flowchart TB
   end
   subgraph ext["EXTERNAL SYSTEMS"]
     direction LR
-    APOLLO["Apollo"]; MINIMAX["MiniMax"]; SMTP["SMTP"]; IMAP["IMAP"]; DB["(SQLite)"]
+    APOLLO["Apollo"]; MINIMAX["fal.ai · Kling"]; SMTP["SMTP / Instantly"]; IMAP["IMAP"]; DB["(SQLite)"]
   end
   B6 -. read by .-> skill
   RUN --> STAGES --> OUT
@@ -70,8 +70,8 @@ The **only code** in the worker layer. Seven verbs, each one external effect. Cr
 | verb | external effect | status |
 |---|---|---|
 | `pull` | Apollo people search → contacts in DB (free search → paid enrich) | client real · needs key |
-| `video` | MiniMax video gen (create → poll → download) | client real · needs key |
-| `send` | deliver an email over SMTP, record the send | ✅ run-verified |
+| `video` | Kling text-to-video via fal.ai (queue: submit→poll→fetch) | client real · needs key |
+| `send` | deliver via `SEND_BACKEND` (Instantly baseline / SMTP), record the send | ✅ run-verified |
 | `track` | write the DB; record events; funnel report by variant/cohort | ✅ run-verified |
 | `host` | place an asset at a unique URL | ✅ run-verified |
 | `serve` | serve assets (`view`/GET) + tracked `click` → 302 + `/u` one-click unsubscribe | ✅ run-verified |
@@ -79,7 +79,7 @@ The **only code** in the worker layer. Seven verbs, each one external effect. Cr
 | `market` | `refresh` → TAM/SAM + seniority cube from free Apollo search totals (SOM live from booked-rate) | client real · needs key |
 | `qualify` | `set`/`summary` — store LLM ICP fit scores → **qualified** TAM (raw count × fit-rate) | ✅ run-verified |
 | `suppress` | opt-out list (CAN-SPAM): `add` / `check` (exit 2 if suppressed) | ✅ run-verified |
-| `reply` | read replies over IMAP | client real · needs creds |
+| `reply` | read replies via `REPLY_BACKEND` (Instantly Unibox / IMAP) | client real · needs creds |
 
 ```bash
 jwout pull --titles "CMO,VP Brand" --seniorities director,vp --status verified --limit 25
@@ -138,7 +138,7 @@ clients/<name>/
 └── dedupe/          # exclusion lists (data)
 ```
 
-Everything a client must provide is a **slot** — a string, number, file, secret, or object. Even a cold sending domain is a config object: `{domain, spf, dkim, dmarc, warmup_status, from_addresses[], daily_cap}` — "warmed" is just `warmup_status: ready`. That it costs money and weeks to reach `ready` is *acquisition cost*, not a different kind of thing (a paid API key is config too). **There is no client requirement that is not config.**
+Everything a client must provide is a **slot** — a string, number, file, secret, or object. A cold sending domain is a config object: `{domain, spf, dkim, dmarc, warmup_status, from_addresses[], daily_cap}`, and `warmup_status: ready` is the readiness **flag**. ⚠️ But warmup itself is a **real capability this engine does NOT provide** — it is deliberately outsourced (BASELINE: Instantly, `SEND_BACKEND=instantly`; see `docs/WARMUP-RND.md`). The flag records that *some external process* warmed the domain; nothing here warms it. So "config" here means "the slot where the result of an outsourced capability is recorded," not "a thing we handle." **Every other client requirement is genuinely config.**
 
 [`clients/b6`](clients/b6) is the worked example. See its [`README`](clients/b6/README.md) for the `NEEDS-FROM-AVI` slots still to be filled.
 

@@ -1,17 +1,35 @@
-"""`reply` — read replies over IMAP.
+"""`reply` — read inbound replies via a swappable backend.
 
-External effect: connects to an inbox and pulls messages. Cold sending routes
-replies to a monitored mailbox; this reads them so a human (or the LLM) can
-see who answered. Defaults to UNSEEN so each call returns only new mail.
-    IMAP_HOST IMAP_PORT IMAP_USER IMAP_PASS  (IMAP_SSL=1 by default)
+Backend chosen by REPLY_BACKEND (defaults to SEND_BACKEND, else "imap") — because
+replies land wherever you sent from:
+
+  imap      — connect to a monitored mailbox and pull messages (cold SMTP routes
+              replies to an inbox you watch). Defaults to UNSEEN so each call
+              returns only new mail.
+                IMAP_HOST IMAP_PORT IMAP_USER IMAP_PASS   (IMAP_SSL=1 default)
+
+  instantly — when sending via Instantly, replies live in Instantly's Unibox, not
+              an IMAP inbox. This pulls them from GET /api/v2/emails (received).
+                INSTANTLY_API_KEY  INSTANTLY_CAMPAIGN_ID  (INSTANTLY_DRY_RUN=1 to
+                print the request instead of calling)
+
+Both backends return the same shape: [{from, subject, date, snippet}].
 """
 
 import email
 import email.message
 import imaplib
+import json
 import os
+import sys
+import urllib.parse
+import urllib.request
 from email.header import decode_header
 
+INSTANTLY_EMAILS_URL = "https://api.instantly.ai/api/v2/emails"
+
+
+# ---- imap backend ---------------------------------------------------------
 
 def _decode(value: str) -> str:
     out = []
@@ -59,3 +77,57 @@ def fetch(*, folder: str = "INBOX", criterion: str = "UNSEEN", limit: int = 50) 
             conn.logout()
         except Exception:
             pass
+
+
+# ---- instantly backend (Unibox replies) -----------------------------------
+
+def _instantly_body(e: dict, limit: int = 500) -> str:
+    body = e.get("body")
+    if isinstance(body, dict):
+        body = body.get("text") or body.get("html") or ""
+    if not body:
+        body = e.get("text") or e.get("content") or e.get("preview") or ""
+    return str(body)[:limit]
+
+
+def instantly_fetch_replies(*, limit: int = 50) -> list[dict]:
+    """Pull received replies from Instantly's Unibox for our campaign."""
+    api_key = os.environ["INSTANTLY_API_KEY"]
+    campaign = os.environ.get("INSTANTLY_CAMPAIGN_ID", "")
+    # NOTE: confirm the exact v2 filter param on first live run — public docs are
+    # partial with v1↔v2 drift. 'email_type=received' is the documented filter;
+    # the defensive parsing below tolerates field-name differences either way.
+    params = {"email_type": "received", "preview_only": "false", "limit": str(limit)}
+    if campaign:
+        params["campaign_id"] = campaign
+    url = INSTANTLY_EMAILS_URL + "?" + urllib.parse.urlencode(params)
+
+    if os.environ.get("INSTANTLY_DRY_RUN") == "1":
+        print(f"[dry-run] GET {url}  (Authorization: Bearer ***)", file=sys.stderr)
+        return []
+
+    req = urllib.request.Request(url, method="GET",
+                                 headers={"Authorization": f"Bearer {api_key}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        data = json.loads(r.read() or b"{}")
+    items = data.get("items") or data.get("data") or (data if isinstance(data, list) else [])
+    out = []
+    for e in items[:limit]:
+        out.append({
+            "from": e.get("from") or e.get("from_address") or e.get("lead") or "",
+            "subject": e.get("subject", ""),
+            "date": e.get("timestamp") or e.get("timestamp_created") or e.get("date") or "",
+            "snippet": _instantly_body(e),
+        })
+    return out
+
+
+# ---- dispatcher -----------------------------------------------------------
+
+def read(*, folder: str = "INBOX", criterion: str = "UNSEEN", limit: int = 50) -> list[dict]:
+    """Route to the configured backend. Replies land wherever you sent from, so
+    REPLY_BACKEND defaults to SEND_BACKEND."""
+    backend = os.environ.get("REPLY_BACKEND", os.environ.get("SEND_BACKEND", "imap")).lower()
+    if backend == "instantly":
+        return instantly_fetch_replies(limit=limit)
+    return fetch(folder=folder, criterion=criterion, limit=limit)

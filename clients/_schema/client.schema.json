@@ -19,7 +19,7 @@
     },
     "sending": {
       "type": "object",
-      "description": "Cold sending config. A domain is a data object; 'warmed' is the warmup_status field, not a separate kind of thing — its value just takes time/money to reach 'ready'. The deliver step only sends from domains whose warmup_status is 'ready'.",
+      "description": "Cold sending config. warmup_status is a READINESS FLAG, not a warmer — this engine does NOT warm domains (warmup is outsourced, BASELINE Instantly; see docs/WARMUP-RND.md). The flag records that an EXTERNAL process reached 'ready'. The deliver step only sends from domains whose warmup_status is 'ready'.",
       "required": ["domains"],
       "properties": {
         "domains": {

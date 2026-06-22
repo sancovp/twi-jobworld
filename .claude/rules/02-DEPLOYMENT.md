@@ -82,12 +82,13 @@ sequenceDiagram
 | `JOBWORLD_INSTANCE`, `JOBWORLD_PORT` | which instance (JW) |
 | `JW_CLIENT`, `JW_CLIENT_DIR` | active client, e.g. `b6` / `/agent/clients/b6` |
 | `JWOUT_DB` | the run DB, e.g. `$INSTANCE_DIR/outreach.db` |
-| `MINIMAX_API_KEY`, `MINIMAX_BASE_URL` | CEO model redirect + `jwout video` |
+| `MINIMAX_API_KEY`, `MINIMAX_BASE_URL` | CEO model backend (the agent's LLM) |
+| `FAL_KEY`, `VIDEO_BACKEND` | `jwout video` (Kling via fal.ai) |
 | secret bundle per `client.json.env_profile` | the connector credentials below |
 
 ## Secret bundle (per `env_profile`) — see `deploy/secrets.example.env`
 
-`APOLLO_API_KEY` · `CENSUS_API_KEY` (free, market cross-check) · `SMTP_HOST/PORT/USER/PASS` ·
+`APOLLO_API_KEY` · `CENSUS_API_KEY` (free) · `FAL_KEY` (Kling video) · `SEND_BACKEND`/`INSTANTLY_API_KEY`/`INSTANTLY_CAMPAIGN_ID` · `SMTP_HOST/PORT/USER/PASS` ·
 `IMAP_HOST/PORT/USER/PASS` ·
 `HOST_DIR` / `HOST_BASE_URL`. Never commit real secrets; `deploy/secrets.*.env`
 is gitignored (only `secrets.example.env` is tracked).
@@ -100,6 +101,7 @@ is gitignored (only `secrets.example.env` is tracked).
 - **View** (teaser GET) and **click** (tracked `/c/<token>` redirect to the
   stored destination) tracking ARE built in `jwout serve`. Only **open**-pixel
   tracking is not — it needs an ESP pixel and is ESP-dependent.
-- Verified **Apollo** field names and **MiniMax video** endpoints (see
-  `connectors/outreach/README.md`).
+- Verified **Apollo** field names; **video** runs on **fal.ai Kling** (queue API) with
+  **Instantly** as the send/reply backend — confirm the Kling slug + Instantly filter
+  params on the first live call (see `connectors/outreach/README.md`).
 These are provisioning/verification, gated on client sign-off — not more code.

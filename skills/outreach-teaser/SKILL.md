@@ -17,7 +17,7 @@ Turn a written video prompt into a hosted, per-brand teaser link.
 
 ## Procedure
 
-1. **Generate** (CONNECTOR — external MiniMax call, costs money):
+1. **Generate** (CONNECTOR — external Kling/fal.ai call, costs money):
    ```bash
    jwout video "$(cat copy/<email>.touch<n>.vprompt.txt)" --out teasers/<email>.mp4
    ```

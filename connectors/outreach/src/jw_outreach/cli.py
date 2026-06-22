@@ -71,13 +71,17 @@ def cmd_video(args):
 
 def cmd_send(args):
     body = Path(args.body_file).read_text() if args.body_file else args.body
-    msg = send.build_message(
+    result = send.deliver(
         to_email=args.to, subject=args.subject, body=body,
         from_email=getattr(args, "from"), from_name=args.from_name, reply_to=args.reply_to,
+        first_name=args.first_name, last_name=args.last_name,
+        company=args.company or args.brand,
     )
-    send.smtp_send(msg)
+    backend = result.get("backend", "smtp")
+    if result.get("dry_run"):
+        print(result["payload"])
     if args.no_record:
-        print(f"sent to {args.to} (not recorded)")
+        print(f"sent to {args.to} via {backend} (not recorded)")
         return
     conn = _conn(args)
     sid = db.record_send(conn, to_email=args.to, subject=args.subject, body=body,
@@ -85,7 +89,7 @@ def cmd_send(args):
                          cohort=args.cohort, asset_url=args.asset_url,
                          click_token=args.click_token, click_dest=args.click_dest,
                          unsub_token=args.unsub_token)
-    print(f"sent to {args.to}; send_id={sid}")
+    print(f"sent to {args.to} via {backend}; send_id={sid}")
 
 
 # ---- track ----------------------------------------------------------------
@@ -176,9 +180,9 @@ def cmd_suppress_check(args):
 # ---- reply ----------------------------------------------------------------
 
 def cmd_reply(args):
-    msgs = reply.fetch(folder=args.folder,
-                       criterion="ALL" if args.all else "UNSEEN",
-                       limit=args.limit)
+    msgs = reply.read(folder=args.folder,
+                      criterion="ALL" if args.all else "UNSEEN",
+                      limit=args.limit)
     if args.json:
         print(json.dumps(msgs, indent=2))
         return
@@ -216,7 +220,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", default="")
     p.set_defaults(func=cmd_video)
 
-    p = top.add_parser("send", help="deliver an email over SMTP")
+    p = top.add_parser("send", help="deliver outbound via SEND_BACKEND (smtp | instantly)")
     p.add_argument("--to", required=True)
     p.add_argument("--subject", required=True)
     g = p.add_mutually_exclusive_group(required=True)
@@ -225,6 +229,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from", required=True, help="from address")
     p.add_argument("--from-name", default="")
     p.add_argument("--reply-to", default="")
+    p.add_argument("--first-name", default="")
+    p.add_argument("--last-name", default="")
+    p.add_argument("--company", default="", help="company_name (Instantly backend; falls back to --brand)")
     p.add_argument("--brand", default="")
     p.add_argument("--touch", type=int, default=1)
     p.add_argument("--variant", default="")
@@ -304,7 +311,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_db(pc)
     pc.set_defaults(func=cmd_suppress_check)
 
-    p = top.add_parser("reply", help="read replies over IMAP")
+    p = top.add_parser("reply", help="read replies via REPLY_BACKEND (imap | instantly)")
     p.add_argument("--folder", default="INBOX")
     p.add_argument("--all", action="store_true", help="all mail, not just unseen")
     p.add_argument("--limit", type=int, default=50)

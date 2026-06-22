@@ -101,7 +101,7 @@ flowchart TB
     OUT["outreach (jwout): pull·video·send·track·host·serve·dashboard·market·qualify·suppress·reply"]
   end
   subgraph ext["EXTERNAL SYSTEMS"]
-    APOLLO["Apollo API"]; MINIMAX["MiniMax video"]; SMTP["SMTP / cold mailserver"]
+    APOLLO["Apollo API"]; MINIMAX["fal.ai Kling (video)"]; SMTP["SMTP / cold mailserver"]
     IMAP["IMAP"]; STATIC["static host (view tracking)"]; DB["(SQLite state)"]
   end
   B6 -. read by .-> skill

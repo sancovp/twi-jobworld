@@ -9,7 +9,7 @@ Snapshot of where the worker layer stands. Update this whenever state changes.
 | `connectors/outreach` (`jwout`) | 11 verbs | imports clean; in-image |
 | `host` / `send` / `track` / `serve` | ✅ run-verified | host (URL), send (local SMTP, send_id), track (events+report), serve (view 200, click 302+recorded, traversal 404) |
 | `pull` (Apollo search→enrich) | ✅ doc-verified, real client | two-step confirmed vs docs; needs key for live call |
-| `video` (MiniMax) | ✅ doc-verified, real client | endpoints/auth/status/model/body confirmed vs docs; needs key |
+| `video` (Kling via fal.ai) | ✅ wired + dry-run; minimax fallback | fal queue API (submit/poll/fetch); confirm Kling slug live; needs `FAL_KEY` |
 | `reply` (IMAP) | real client | needs creds |
 | 6 stage skills + `run-outreach-campaign` | ✅ in image | rebuilt + listed in `/agent/skills` |
 | 5 dept agents + CEO wired | ✅ | CEO.md references campaign skill (grep) |
@@ -23,7 +23,7 @@ Snapshot of where the worker layer stands. Update this whenever state changes.
 ```bash
 docker build -f Dockerfile.sdk -t avi-jw:latest .
 # run an instance with: JOBWORLD_INSTANCE, JW_CLIENT=b6, JW_CLIENT_DIR=/agent/clients/b6,
-# JWOUT_DB, the secret bundle (deploy/secrets.b6.env per env_profile), MINIMAX creds.
+# JWOUT_DB, the secret bundle (deploy/secrets.b6.env per env_profile: FAL_KEY for video, MINIMAX for CEO model, …).
 # the CEO uses run-outreach-campaign to drive research→content→production→delivery→metacog.
 # serve the asset domain: jwout serve --port 443-fronted, docroot=$HOST_DIR
 ```
@@ -42,7 +42,8 @@ docker build -f Dockerfile.sdk -t avi-jw:latest .
 | the 3 dedupe CSVs | `clients/b6/dedupe/*.csv` | `outreach-source` exclusion (required for any live send) |
 | postal address + unsubscribe URL | `client.json.compliance.{postal_address,unsubscribe_url}` | CAN-SPAM footer → `outreach-deliver` will not send without it |
 | Apollo master key | `APOLLO_API_KEY` | `pull` |
-| MiniMax key | `MINIMAX_API_KEY` | `video` + CEO model |
+| fal.ai key | `FAL_KEY` | `video` (Kling) |
+| MiniMax key | `MINIMAX_API_KEY` | CEO model backend (not video) |
 
 Nothing in this list requires new code — each is a config value or a credential.
 That is the design: the build is complete; answers fill slots.

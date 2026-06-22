@@ -12,7 +12,7 @@ flowchart TB
   subgraph pkg["jw_outreach package"]
     CLI["cli.py — verb wiring / argparse"]
     SRC["source.py — pull (Apollo 2-step)"]
-    VID["video.py — video (MiniMax async)"]
+    VID["video.py — video (Kling via fal.ai; minimax fallback)"]
     SND["send.py — send (SMTP)"]
     HST["host.py — host (unique URL)"]
     SRV["serve.py — serve (view + click + /u unsubscribe)"]
@@ -83,13 +83,13 @@ sequenceDiagram
   end
 ```
 
-## `video` — MiniMax async create/poll/download boundary
+## `video` — async submit/poll/fetch boundary (fal.ai Kling default; MiniMax shape shown as the fallback)
 
 ```mermaid
 sequenceDiagram
   participant W as Worker
   participant CLI as jwout video
-  participant MM as MiniMax API
+  participant MM as video API (fal.ai Kling default / MiniMax fallback)
   W->>CLI: video "<prompt>" --out f.mp4
   CLI->>MM: POST /v1/video_generation {model,prompt,duration,resolution}
   MM-->>CLI: task_id

@@ -16,8 +16,8 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | verb | external effect | key env vars | run-verified? |
 |---|---|---|---|
 | `pull` | Apollo people search → contacts in DB | `APOLLO_API_KEY` | client real; needs key |
-| `video` | MiniMax video gen (create→poll→download) | `MINIMAX_API_KEY`, `MINIMAX_BASE_URL`, `MINIMAX_VIDEO_MODEL` | client real; needs key |
-| `send` | SMTP delivery | `SMTP_HOST/PORT/USER/PASS`, `SMTP_STARTTLS` | ✅ ran against local SMTP |
+| `video` | Kling text-to-video via fal.ai (queue: submit→poll→fetch); `VIDEO_BACKEND=fal_kling` default, `minimax` fallback | `FAL_KEY`, `FAL_VIDEO_MODEL` | client real; needs key |
+| `send` | deliver via `SEND_BACKEND` — `instantly` (BASELINE; warmed campaign) or `smtp` (dumb relay) | `INSTANTLY_API_KEY`,`INSTANTLY_CAMPAIGN_ID` / `SMTP_*` | ✅ SMTP local; Instantly dry-run |
 | `track` | write DB; record events; report | `JWOUT_DB` | ✅ ran (event + report) |
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
 | `serve` | HTTP-serve assets (`view`/GET) + tracked-link `click` redirect (stored dest) + `/u/<token>` one-click unsubscribe | `HOST_DIR`, `JWOUT_DB` | ✅ ran (serve+view; click→302; traversal 404; /u→suppress+200) |
@@ -25,14 +25,14 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 | `market` | `refresh` → TAM/SAM + cube (seniority×employee×industry) via FREE Apollo counts + account-level Apollo org count + Census CBP cross-check → a TAM **range** | `APOLLO_API_KEY`, `CENSUS_API_KEY` (free), `JW_CLIENT_DIR` | client real; needs keys |
 | `qualify` | `set <email> --tier --score --reason` / `summary` — store LLM ICP fit scores → qualified TAM | `JWOUT_DB` | ✅ ran (set/summary; qualified-TAM math) |
 | `suppress` | opt-out list: `add <email>` / `check <email>` (exit 2 if suppressed) | `JWOUT_DB` | ✅ ran (add/check + /u recording) |
-| `reply` | IMAP read (UNSEEN by default) | `IMAP_HOST/PORT/USER/PASS`, `IMAP_SSL` | client real; needs creds |
+| `reply` | read via `REPLY_BACKEND` (defaults to SEND_BACKEND) — `instantly` Unibox or `imap` | `INSTANTLY_API_KEY` / `IMAP_*` | ✅ Instantly dry-run; IMAP needs creds |
 
 ## Usage
 
 ```bash
 jwout pull   --titles "CMO,VP Marketing" --seniorities director,vp --status verified --domains acme.com --limit 25
              # two-step: search (free) then bulk_match enrich (credits). --no-enrich = free preview, no emails.
-jwout video  "9s teaser: <prompt>" --out teaser.mp4 [--model MiniMax-Hailuo-02]
+jwout video  "9s teaser: <prompt>" --out teaser.mp4   # VIDEO_BACKEND=fal_kling (Kling via fal.ai)
 jwout host   teaser.mp4                       # → https://<base>/<uid>/teaser.mp4
 jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --from-name "Name" \
              [--brand B --touch 1 --variant video --cohort engine --asset-url URL \
@@ -74,11 +74,11 @@ flowchart LR
   is now implemented (the earlier single-call design was wrong — search alone
   yields zero usable contacts). Requires a master API key. The exact
   bulk_match response field names should be confirmed on the first live call.
-- **MiniMax video** (`video.py`): verified `/v1/video_generation`,
-  `/v1/query/video_generation`, `/v1/files/retrieve`; `Authorization: Bearer`;
-  status `Success`/`Fail`; `file.download_url` (valid 9h); models
-  `MiniMax-Hailuo-02` / `MiniMax-Hailuo-2.3`; body takes `duration` (6|10) and
-  `resolution`. All match the implementation.
+- **Video — Kling via fal.ai** (`video.py`, BASELINE): fal queue API
+  (`POST https://queue.fal.run/<kling-model>` → poll status → fetch `video.url`);
+  `Authorization: Key <FAL_KEY>`; ~$0.07-0.08/sec. Confirm the exact Kling model
+  slug/tier on fal.ai before the first paid run. MiniMax (Hailuo) endpoints remain
+  wired as a `VIDEO_BACKEND=minimax` fallback only — not the chosen tool.
 
 ## Deployment infra these verbs assume (NOT code — provisioning)
 
