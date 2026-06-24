@@ -6,7 +6,7 @@
 
 A fork of [TWI JobWorld](#appendix--the-jobworld-base) whose CEO runs on the Claude Code SDK, plus a **worker layer** of connectors and skills that execute a full hyper-personalized outreach pipeline. The machine is universal. A client is pure configuration. *B6 is just `$client`.*
 
-`SDK CEO` · `jwout` connector (11 verbs) · 7 stage skills · 5 departments · config-specialized clients
+`SDK CEO` · `jwout` connector (12 verbs) · 8 stage skills · 5 departments · config-specialized clients
 
 </div>
 
@@ -57,6 +57,7 @@ flowchart TB
 | source decision-makers | consumer $20M+, director+, those titles | `jwout pull` |
 | write personalized copy | locked positioning + four-part anatomy | *(none — LLM applies instructions)* |
 | make a teaser | show-world + product, navy/chartreuse | `jwout video` + `host` |
+| build the landing page | one page, no deck — concept + teaser + calendar CTA | `jwout page` + `host` |
 | deliver + record | warmed cold domains, cohorts | `jwout send` + `track` |
 | read + classify replies | monitored inbox | `jwout reply` + `track` |
 | measure | success thresholds, cost cap | `jwout track report` |
@@ -71,6 +72,7 @@ The **only code** in the worker layer. Seven verbs, each one external effect. Cr
 |---|---|---|
 | `pull` | Apollo people search → contacts in DB (free search → paid enrich) | client real · needs key |
 | `video` | Kling text-to-video via fal.ai (queue: submit→poll→fetch) | client real · needs key |
+| `page` | render a per-brand landing page (HTML) to a local file — concept + video embed + one CTA; host via `jwout host` | ✅ run-verified |
 | `send` | deliver via `SEND_BACKEND` (Instantly baseline / SMTP), record the send | ✅ run-verified |
 | `track` | write the DB; record events; funnel report by variant/cohort | ✅ run-verified |
 | `host` | place an asset at a unique URL | ✅ run-verified |
@@ -85,6 +87,12 @@ The **only code** in the worker layer. Seven verbs, each one external effect. Cr
 jwout pull --titles "CMO,VP Brand" --seniorities director,vp --status verified --limit 25
 jwout video "9s teaser: <prompt>" --out teaser.mp4
 jwout host teaser.mp4                         # → https://<host>/<uid>/teaser.mp4
+jwout page --brand "Oatly" --concept-file copy/oatly.touch1.concept.txt \
+           --calendar-url "https://cal.example.com/mason" \
+           --out pages/oatly.touch1.html \
+           --video-url "https://<host>/<uid>/teaser.mp4" \
+           --honesty-note "We mocked this up. Our artists do the real production."
+jwout host pages/oatly.touch1.html            # → https://<host>/<uid>/oatly.touch1.html  ([[custom page link]])
 jwout send --to a@b.com --subject "..." --body-file copy.txt --from cold1@dom --variant video
 jwout track event <send_id> reply             # delivered|view|click|reply|booked|bounced
 jwout track report --cost 0.50
@@ -103,6 +111,7 @@ Six **stage skills** (procedures composing connector verbs with client instructi
 | `research` | source leads | `outreach-source` | `pull` |
 | `content` | write copy | `outreach-write` | *(none)* |
 | `production` | make + host teaser | `outreach-teaser` | `video`, `host` |
+| `production` | render + host landing page | `outreach-page` | `page`, `host` |
 | `delivery` | send + replies | `outreach-deliver`, `outreach-replies` | `send`, `reply`, `track` |
 | `metacog` | measure + judge | `outreach-report` | `track report` |
 

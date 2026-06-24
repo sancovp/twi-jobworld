@@ -11,16 +11,17 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 # gives the `jwout` console script
 ```
 
-## The eleven verbs
+## The twelve verbs
 
 | verb | external effect | key env vars | run-verified? |
 |---|---|---|---|
 | `pull` | Apollo people search → contacts in DB | `APOLLO_API_KEY` | client real; needs key |
 | `video` | Kling text-to-video via fal.ai (queue: submit→poll→fetch); `VIDEO_BACKEND=fal_kling` default, `minimax` fallback | `FAL_KEY`, `FAL_VIDEO_MODEL` | client real; needs key |
+| `page` | render a per-brand landing page (HTML) to a local file — brand + concept + video embed + one CTA button | *(none)* | ✅ ran (render + write; view tracking via serve) |
 | `send` | deliver via `SEND_BACKEND` — `instantly` (BASELINE; warmed campaign) or `smtp` (dumb relay) | `INSTANTLY_API_KEY`,`INSTANTLY_CAMPAIGN_ID` / `SMTP_*` | ✅ SMTP local; Instantly dry-run |
 | `track` | write DB; record events; report | `JWOUT_DB` | ✅ ran (event + report) |
 | `host` | copy asset to unique served path → URL | `HOST_DIR`, `HOST_BASE_URL` | ✅ ran (file placed, URL returned) |
-| `serve` | HTTP-serve assets (`view`/GET) + tracked-link `click` redirect (stored dest) + `/u/<token>` one-click unsubscribe | `HOST_DIR`, `JWOUT_DB` | ✅ ran (serve+view; click→302; traversal 404; /u→suppress+200) |
+| `serve` | HTTP-serve assets (`view`/GET) + tracked-link `click` redirect (stored dest) + `/u/<token>` one-click unsubscribe; serves `.html` pages natively (text/html) | `HOST_DIR`, `JWOUT_DB` | ✅ ran (serve+view; click→302; traversal 404; /u→suppress+200; html page 200+view recorded) |
 | `dashboard` | read-view, two pages: `/` ops (funnel/contacts/replies/gates) + `/business` exec (won/lost/potential, TAM→SAM→SOM, cost, revenue stub); localhost | `JWOUT_DB`, `JW_CLIENT_DIR` | ✅ ran (both routes; $ math; empty + no-snapshot states) |
 | `market` | `refresh` → TAM/SAM + cube (seniority×employee×industry) via FREE Apollo counts + account-level Apollo org count + Census CBP cross-check → a TAM **range** | `APOLLO_API_KEY`, `CENSUS_API_KEY` (free), `JW_CLIENT_DIR` | client real; needs keys |
 | `qualify` | `set <email> --tier --score --reason` / `summary` — store LLM ICP fit scores → qualified TAM | `JWOUT_DB` | ✅ ran (set/summary; qualified-TAM math) |
@@ -33,7 +34,13 @@ cd connectors/outreach && python3 -m venv .venv && .venv/bin/pip install -e .
 jwout pull   --titles "CMO,VP Marketing" --seniorities director,vp --status verified --domains acme.com --limit 25
              # two-step: search (free) then bulk_match enrich (credits). --no-enrich = free preview, no emails.
 jwout video  "9s teaser: <prompt>" --out teaser.mp4   # VIDEO_BACKEND=fal_kling (Kling via fal.ai)
-jwout host   teaser.mp4                       # → https://<base>/<uid>/teaser.mp4
+jwout page   --brand "Oatly" --concept-file copy/email.touch1.concept.txt \
+             --calendar-url "https://cal.example.com/mason" \
+             --out pages/email.touch1.html \
+             --video-url "https://<base>/<uid>/email.mp4" \
+             --honesty-note "We mocked this up to show the idea. Our artists do the real production."
+             # → writes a complete HTML page (B6 navy+chartreuse, <video> embed, one CTA button)
+jwout host   pages/email.touch1.html         # → https://<base>/<uid>/email.touch1.html  (the [[custom page link]])
 jwout send   --to a@b.com --subject "..." --body-file copy.txt --from f@dom --from-name "Name" \
              [--brand B --touch 1 --variant video --cohort engine --asset-url URL \
               --click-token TOK --click-dest CAL_URL --unsub-token UTOK] [--no-record]
@@ -92,7 +99,7 @@ flowchart LR
 
 ## Module map
 
-`cli.py` (verb wiring) → `source.py` (pull + free counts) · `video.py` · `send.py` ·
+`cli.py` (verb wiring) → `source.py` (pull + free counts) · `video.py` · `page.py` (landing-page renderer) · `send.py` ·
 `db.py` (track + persisted state) · `host.py` · `serve.py` · `dashboard.py` ·
 `market.py` (TAM/SAM/cube + business metrics) · `census.py` (CBP cross-check) ·
 `reply.py` · `models.py` (Contact).

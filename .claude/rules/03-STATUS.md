@@ -6,8 +6,9 @@ Snapshot of where the worker layer stands. Update this whenever state changes.
 
 | piece | state | how verified |
 |---|---|---|
-| `connectors/outreach` (`jwout`) | 11 verbs | imports clean; in-image |
+| `connectors/outreach` (`jwout`) | 12 verbs | imports clean; in-image |
 | `host` / `send` / `track` / `serve` | ✅ run-verified | host (URL), send (local SMTP, send_id), track (events+report), serve (view 200, click 302+recorded, traversal 404) |
+| `page` | ✅ run-verified | `jwout page` renders HTML file; `jwout host` places it; `jwout serve` serves text/html 200; view event recorded in DB on GET |
 | `pull` (Apollo search→enrich) | ✅ doc-verified, real client | two-step confirmed vs docs; needs key for live call |
 | `video` (Kling via fal.ai) | ✅ wired + dry-run; minimax fallback | fal queue API (submit/poll/fetch); confirm Kling slug live; needs `FAL_KEY` |
 | `reply` (IMAP) | real client | needs creds |

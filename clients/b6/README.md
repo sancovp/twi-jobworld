@@ -14,6 +14,21 @@ content that specializes the generic JW outreach process for B6. No code here.
 | `icp.md` | ICP scoring rubric for `outreach-qualify` (qualified TAM); see `.claude/rules/04-MARKET-MAPPING.md` |
 | `dedupe/` | exclusion lists (STC / Trashed / 7 Stories) |
 
+## Campaign flow for the video variant (updated)
+
+```
+outreach-write  →  outreach-teaser  →  outreach-page  →  outreach-deliver
+(concept + prompt)  (mp4 + host)     (HTML page + host)  (email with page URL)
+                                              |
+                              [[custom page link]] = the hosted page URL
+                              (replaces the raw mp4 URL in the email body)
+```
+
+The email says "We sketched what a [[Brand]] show could look like. One page, no
+deck: [[custom page link]]." That link is the HTML page produced by `outreach-page`
+(rendered by `jwout page`, hosted by `jwout host`). The page embeds the teaser
+video, shows the concept sketch, and has exactly one CTA: the calendar booking link.
+
 ## Scope (SPEC §2)
 
 GENERAL outreach only — the long tail of brands the manual sniper pipelines will

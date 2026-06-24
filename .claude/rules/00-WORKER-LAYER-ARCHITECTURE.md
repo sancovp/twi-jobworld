@@ -51,6 +51,7 @@ CONNECTOR (code)    ── the ONLY functions: external-effect verbs (pull · vi
 | source decision-makers | B6 targeting: consumer $20M+, director+, those titles | `connectors/outreach` → `jwout pull` |
 | write personalized copy | B6 template + locked positioning + four-part anatomy | *(no code — LLM applies `clients/b6` instructions)* |
 | make a teaser clip | B6 show-world + brand product, navy/chartreuse | `jwout video` + `jwout host` |
+| build the landing page | one page, no deck — concept + teaser embed + calendar CTA | `jwout page` + `jwout host` |
 | deliver + record | B6 cold domains, from-addresses, cohorts | `jwout send` + `jwout track` |
 | read + classify replies | B6 monitored inbox | `jwout reply` + `jwout track event … reply` |
 | measure | B6 success thresholds, cost cap | `jwout track report` |
@@ -98,7 +99,7 @@ flowchart TB
     DLV["outreach-deliver"]; RPL["outreach-replies"]; RPT["outreach-report"]
   end
   subgraph conn["connectors/ (CODE — external effects)"]
-    OUT["outreach (jwout): pull·video·send·track·host·serve·dashboard·market·qualify·suppress·reply"]
+    OUT["outreach (jwout): pull·video·page·send·track·host·serve·dashboard·market·qualify·suppress·reply"]
   end
   subgraph ext["EXTERNAL SYSTEMS"]
     APOLLO["Apollo API"]; MINIMAX["fal.ai Kling (video)"]; SMTP["SMTP / cold mailserver"]

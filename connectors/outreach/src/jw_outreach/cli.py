@@ -2,6 +2,10 @@
 
     jwout pull   --titles a,b --seniorities director,vp --status verified --domains x.com,y.com --limit N
     jwout video  "<prompt>" --out teaser.mp4 [--model M]
+    jwout page   --brand BRAND --concept-file F --calendar-url URL --out page.html
+                 [--video-url URL] [--honesty-note TEXT] [--headline TEXT]
+                 [--from-name N] [--from-title T] [--from-email E] [--from-phone P]
+                 [--bg-color HEX] [--accent-color HEX] [--button-fg-color HEX]
     jwout send   --to a@b.com --subject S (--body TEXT | --body-file F) --from f@dom [--from-name N] [--reply-to R]
                  [--brand B --touch N --variant V --cohort C --asset-url U --click-token T --click-dest URL --unsub-token UT]  (records unless --no-record)
     jwout track    event <send_id> <type>
@@ -24,7 +28,7 @@ import os
 import sys
 from pathlib import Path
 
-from . import dashboard, db, host, market, reply, send, serve, source, video
+from . import dashboard, db, host, market, page, reply, send, serve, source, video
 
 
 def _split(s: str) -> list[str]:
@@ -64,6 +68,35 @@ def cmd_pull(args):
 
 def cmd_video(args):
     out = video.generate(args.prompt, args.out, args.model)
+    print(out)
+
+
+# ---- page -----------------------------------------------------------------
+
+def cmd_page(args):
+    concept = Path(args.concept_file).read_text(encoding="utf-8") if args.concept_file else args.concept
+    if not concept:
+        import sys
+        sys.exit("page: --concept-file or --concept is required")
+    out = page.write_page(
+        args.out,
+        brand=args.brand,
+        concept=concept,
+        calendar_url=args.calendar_url,
+        video_url=args.video_url or "",
+        honesty_note=args.honesty_note or "",
+        headline=args.headline or "",
+        studio_name=args.studio_name or "B6 Studios",
+        cta_label=args.cta_label or "Book 15 minutes with Mason and Weston",
+        cta_sub=args.cta_sub or "If this lands, grab fifteen minutes with us and we will build the rest with you.",
+        from_name=args.from_name or "Mason Collins",
+        from_title=args.from_title or "President, B6 Studios",
+        from_email=args.from_email or "mason@b6studios.com",
+        from_phone=args.from_phone or "415.717.5037",
+        bg_color=args.bg_color or "#0d2045",
+        accent_color=args.accent_color or "#c8f000",
+        button_fg_color=args.button_fg_color or "#0d2045",
+    )
     print(out)
 
 
@@ -219,6 +252,29 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="teaser.mp4")
     p.add_argument("--model", default="")
     p.set_defaults(func=cmd_video)
+
+    p = top.add_parser("page", help="render a per-brand landing page (HTML) to a local file; host it with `jwout host`")
+    p.add_argument("--brand", required=True, help="brand name (e.g. 'Oatly')")
+    g2 = p.add_mutually_exclusive_group(required=True)
+    g2.add_argument("--concept-file", default="", help="path to concept text file (written by outreach-write)")
+    g2.add_argument("--concept", default="", help="inline concept text (for scripting; prefer --concept-file)")
+    p.add_argument("--calendar-url", required=True, help="the 15-min booking link (the sole CTA on the page)")
+    p.add_argument("--out", required=True, help="output .html file path (then host with `jwout host`)")
+    p.add_argument("--video-url", default="", help="hosted teaser URL (embedded as <video> if set)")
+    p.add_argument("--honesty-note", default="",
+                   help="honesty framing line shown below the video (e.g. 'we mocked this up to show the idea')")
+    p.add_argument("--headline", default="", help="custom page headline (default: 'What a <brand> show looks like.')")
+    p.add_argument("--studio-name", default="", help="studio name in the logo bar + title (default: B6 Studios)")
+    p.add_argument("--cta-label", default="", help="CTA button text (default: 'Book 15 minutes with Mason and Weston')")
+    p.add_argument("--cta-sub", default="", help="line above the CTA button (B6 default)")
+    p.add_argument("--from-name", default="", help="sender name for the page signature (default: Mason Collins)")
+    p.add_argument("--from-title", default="", help="sender title (default: President, B6 Studios)")
+    p.add_argument("--from-email", default="", help="sender email (default: mason@b6studios.com)")
+    p.add_argument("--from-phone", default="", help="sender phone (default: 415.717.5037)")
+    p.add_argument("--bg-color", default="", help="page background hex (default: #0d2045 navy)")
+    p.add_argument("--accent-color", default="", help="accent + CTA color hex (default: #c8f000 chartreuse)")
+    p.add_argument("--button-fg-color", default="", help="CTA button text color hex (default: #0d2045 navy)")
+    p.set_defaults(func=cmd_page)
 
     p = top.add_parser("send", help="deliver outbound via SEND_BACKEND (smtp | instantly)")
     p.add_argument("--to", required=True)

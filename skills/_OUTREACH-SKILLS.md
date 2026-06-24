@@ -34,13 +34,14 @@ six stage skills below are the per-stage procedures it drives.
 | `outreach-qualify` | score ICP fit | `jwout qualify set` | `icp.md` (the rubric) |
 | `outreach-write` | write copy | *(none — pure instruction)* | `positioning.md`, `template.md`, `assets.md` |
 | `outreach-teaser` | make + host clip | `jwout video`, `jwout host` | `template.md` video rules, `assets.md` colors/world |
+| `outreach-page` | render + host landing page | `jwout page`, `jwout host` | `client.json.calendar_url`; concept from write |
 | `outreach-deliver` | send + record | `jwout send`, `jwout track event` | `client.json` from/reply/variant/cohort, CAN-SPAM footer |
 | `outreach-replies` | read + classify replies | `jwout reply`, `jwout track event` | — (LLM classifies) |
 | `outreach-report` | measure | `jwout track report` | `client.json.cost_per_send_usd`, `success` |
 
 ```mermaid
 flowchart LR
-  S[outreach-source] --> W[outreach-write] --> T[outreach-teaser] --> D[outreach-deliver]
+  S[outreach-source] --> W[outreach-write] --> T[outreach-teaser] --> P[outreach-page] --> D[outreach-deliver]
   D --> R[outreach-replies] --> RP[outreach-report]
   S -. uses .-> dedupe; W -. uses .-> tmpl[client instructions]
 ```

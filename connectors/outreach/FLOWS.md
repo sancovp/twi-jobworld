@@ -13,6 +13,7 @@ flowchart TB
     CLI["cli.py — verb wiring / argparse"]
     SRC["source.py — pull (Apollo 2-step)"]
     VID["video.py — video (Kling via fal.ai; minimax fallback)"]
+    PGE["page.py — page (per-brand landing page renderer)"]
     SND["send.py — send (SMTP)"]
     HST["host.py — host (unique URL)"]
     SRV["serve.py — serve (view + click + /u unsubscribe)"]
@@ -23,14 +24,14 @@ flowchart TB
     DBM["db.py — track + suppressions + market + fit + state"]
     MOD["models.py — Contact"]
   end
-  CLI --> SRC & VID & SND & HST & SRV & DSH & MKT & RPL & DBM
+  CLI --> SRC & VID & PGE & SND & HST & SRV & DSH & MKT & RPL & DBM
   SRC --> MOD
   DBM --> MOD
   SRV --> DBM
   DSH --> DBM & MKT
   MKT --> DBM & SRC & CEN
   classDef code fill:#1b4,color:#fff
-  class CLI,SRC,VID,SND,HST,SRV,DSH,MKT,CEN,RPL,DBM,MOD code
+  class CLI,SRC,VID,PGE,SND,HST,SRV,DSH,MKT,CEN,RPL,DBM,MOD code
 ```
 
 `send`, `host`, `video`, `reply` have no internal deps (stdlib/requests only);
@@ -102,6 +103,30 @@ sequenceDiagram
   CLI->>MM: GET download_url
   MM-->>CLI: video bytes
   CLI-->>W: out path
+```
+
+## `page` — render landing page → write file boundary
+
+```mermaid
+sequenceDiagram
+  participant W as Worker (production dept)
+  participant CLI as jwout page
+  participant FS as Local filesystem
+  participant HOST as jwout host
+  participant SRV as jwout serve
+  participant DB as SQLite
+  W->>CLI: page --brand B --concept-file F --calendar-url U --out page.html [--video-url V] [--honesty-note H]
+  Note over CLI: stdlib-only HTML renderer: concept + video embed + one CTA; B6 navy+chartreuse defaults
+  CLI->>FS: write page.html (deterministic, no network)
+  CLI-->>W: resolved path to page.html
+  W->>HOST: jwout host page.html
+  HOST->>FS: copy to HOST_DIR/<uid>/page.html
+  HOST-->>W: https://<base>/<uid>/page.html  (the [[custom page link]])
+  Note over W: pass page URL to outreach-deliver as --asset-url
+  Note over W: later -- recipient browser visits the page URL
+  SRV->>DB: SELECT send WHERE asset_url LIKE %/<uid>/%
+  SRV->>DB: record_event(send_id, "view")
+  Note over DB: same view-tracking loop as teaser mp4 -- uid path is the handle
 ```
 
 ## `send` — build → SMTP → record boundary
