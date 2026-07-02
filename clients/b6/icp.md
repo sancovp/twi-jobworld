@@ -16,14 +16,21 @@ honestly in the reason.
 
 | criterion | weight | what earns it |
 |---|---|---|
+| **Active in social (THE core condition — B6's stated gate)** | 30 | posting regularly (ideally ~daily), multiple active accounts, a real follower base, and especially **creator / influencer / UGC partnerships** (other accounts organically promoting the brand) — partnerships are the single strongest "active" signal |
 | Consumer-facing brand | 25 | sells to consumers; a product/world a short-form series could be built around |
-| Revenue ~$20M+ | 20 | can afford a sponsored/co-developed season |
-| Already makes content (or obviously should) | 20 | active on TikTok/Reels/Shorts, or a category that demands it |
 | Decision-maker authority | 20 | the contact is director+ in brand/marketing/content/social/growth |
-| Brandable world / product fit | 15 | the product naturally lives inside an episodic format |
+| Revenue ~$20M+ | 15 | can afford a sponsored/co-developed season |
+| Brandable world / product fit | 10 | the product naturally lives inside an episodic format |
 
 Sum the earned points. **Tiers:** A = 80–100, B = 60–79, C = 40–59, D = 0–39.
 A/B count as **good fit** (they drive the qualified-TAM rate).
+
+**Active-in-social is a near-gate (B6's explicit condition).** A brand with no
+real social presence cannot be a good fit regardless of the other points — cap it
+at tier C and flag it in the reason. The signals to surface in `research` /
+`qualify`: posting frequency (per day), number of active accounts, follower base,
+and **creator/influencer/UGC partnerships** (other accounts promoting the brand) —
+the last is the strongest indicator; let it pull the score up hard when present.
 
 ## Anti-pitfall rules (from how this goes wrong in practice)
 

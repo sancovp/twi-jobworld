@@ -9,12 +9,16 @@
     "notes": "Consumer-facing brands ~$20M+ revenue that already make content or obviously should, with a product/world a short-form series could be built around. Match the ask to seniority: director level and above; never aim a six-figure concept at a coordinator."
   },
   "sending": {
-    "domains": []
+    "domains": [
+      {"domain": "b6creativestudios.com", "warmup_status": "not_started", "from_addresses": [], "daily_cap": 50},
+      {"domain": "b6studiosmail.com", "warmup_status": "not_started", "from_addresses": [], "daily_cap": 50},
+      {"domain": "b6studiostv.com", "warmup_status": "not_started", "from_addresses": [], "daily_cap": 50}
+    ]
   },
   "from_name": "Mason Collins",
   "reply_to": null,
   "calendar_url": null,
-  "variants": ["text_only", "video"],
+  "variants": ["text_only"],
   "cohorts": ["engine", "manual_control"],
   "cost_per_send_usd": 0.50,
   "success": {
