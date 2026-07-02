@@ -112,7 +112,12 @@ def cmd_send(args):
     )
     backend = result.get("backend", "smtp")
     if result.get("dry_run"):
+        # A dry run must NEVER write a send row: dry-run rows would permanently
+        # pollute track report / the dashboards / touches counts, and "sent"
+        # would be a lie. Print the payload and stop.
         print(result["payload"])
+        print(f"DRY RUN — nothing sent to {args.to}, nothing recorded")
+        return
     if args.no_record:
         print(f"sent to {args.to} via {backend} (not recorded)")
         return

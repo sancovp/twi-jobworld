@@ -114,7 +114,11 @@ def instantly_fetch_replies(*, limit: int = 50) -> list[dict]:
     out = []
     for e in items[:limit]:
         out.append({
-            "from": e.get("from") or e.get("from_address") or e.get("lead") or "",
+            # field-name drift tolerance: v2 Unibox emails have been observed to
+            # carry the sender under different keys; from_address_email is the
+            # likely v2 name — confirm on the first live pull.
+            "from": (e.get("from") or e.get("from_address") or
+                     e.get("from_address_email") or e.get("lead") or ""),
             "subject": e.get("subject", ""),
             "date": e.get("timestamp") or e.get("timestamp_created") or e.get("date") or "",
             "snippet": _instantly_body(e),
@@ -126,8 +130,15 @@ def instantly_fetch_replies(*, limit: int = 50) -> list[dict]:
 
 def read(*, folder: str = "INBOX", criterion: str = "UNSEEN", limit: int = 50) -> list[dict]:
     """Route to the configured backend. Replies land wherever you sent from, so
-    REPLY_BACKEND defaults to SEND_BACKEND."""
-    backend = os.environ.get("REPLY_BACKEND", os.environ.get("SEND_BACKEND", "imap")).lower()
+    REPLY_BACKEND defaults to SEND_BACKEND.
+
+    `or`-chained (not .get defaults) because env-file loaders (docker --env-file,
+    `set -a; . secrets.env`) set EMPTY strings for blank template lines — an empty
+    var must fall through exactly like an unset one, or a blank REPLY_BACKEND=
+    silently forces the IMAP branch under SEND_BACKEND=instantly."""
+    backend = (os.environ.get("REPLY_BACKEND") or os.environ.get("SEND_BACKEND") or "imap").strip().lower()
     if backend == "instantly":
         return instantly_fetch_replies(limit=limit)
-    return fetch(folder=folder, criterion=criterion, limit=limit)
+    if backend == "imap":
+        return fetch(folder=folder, criterion=criterion, limit=limit)
+    raise RuntimeError(f"unknown REPLY_BACKEND: {backend!r} (use imap | instantly)")

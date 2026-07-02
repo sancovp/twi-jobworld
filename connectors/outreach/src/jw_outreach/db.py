@@ -71,6 +71,10 @@ _ADDED_COLUMNS = {
 def connect(db_path: Path = DB_PATH) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
+    # SQLite ships with FK enforcement OFF; without this a typo'd send_id in
+    # `track event` silently fabricates funnel events (a phantom `booked`
+    # inflates the headline metric). ON => IntegrityError at the typo instead.
+    conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(SCHEMA)
     _migrate(conn)
     return conn
@@ -90,13 +94,15 @@ def save_contact(conn: sqlite3.Connection, c: Contact) -> None:
     # Upsert the firmographic fields by email; an existing contact's fit_*
     # (ICP score) is PRESERVED across a re-pull — re-pulling refreshes the
     # company data, it does not erase the qualification.
+    # Email is NORMALIZED (lower/strip) — set_fit and the suppression list look
+    # up lowercase, so a mixed-case Apollo email was stored but unscoreable.
     conn.execute(
         "INSERT INTO contacts (email, brand, domain, first_name, last_name, title, "
         "seniority, email_status, context) VALUES (?,?,?,?,?,?,?,?,?) "
         "ON CONFLICT(email) DO UPDATE SET brand=excluded.brand, domain=excluded.domain, "
         "first_name=excluded.first_name, last_name=excluded.last_name, title=excluded.title, "
         "seniority=excluded.seniority, email_status=excluded.email_status, context=excluded.context",
-        (c.email, c.brand, c.domain, c.first_name, c.last_name, c.title,
+        (c.email.lower().strip(), c.brand, c.domain, c.first_name, c.last_name, c.title,
          c.seniority, c.email_status, c.context),
     )
     conn.commit()
@@ -123,8 +129,8 @@ def record_send(conn: sqlite3.Connection, *, to_email: str, subject: str,
         "INSERT INTO sends (to_email, brand, subject, body, touch, variant, "
         "cohort, asset_url, click_token, click_dest, unsub_token) "
         "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        (to_email, brand, subject, body, touch, variant, cohort, asset_url,
-         click_token, click_dest, unsub_token),
+        (to_email.lower().strip(), brand, subject, body, touch, variant, cohort,
+         asset_url, click_token, click_dest, unsub_token),
     )
     conn.commit()
     return cur.lastrowid

@@ -26,10 +26,18 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLIENT_DIR_IN_IMAGE="/agent/clients/${CLIENT}"
 [ -d "${ROOT}/clients/${CLIENT}" ] || { echo "no client config at clients/${CLIENT}"; exit 1; }
 
-# HOST_BASE_URL: the client's tracked-link domain if configured, else the local
-# serve port (so view/click links at least resolve in a local run).
+# HOST_BASE_URL: ONLY the client's configured tracked-link domain. Never
+# fabricate a localhost fallback: the write/deliver skills gate tracked CTA +
+# unsubscribe links on "HOST_BASE_URL set" — a fabricated localhost value put
+# dead http://localhost:8000 links (including the CAN-SPAM unsubscribe) into
+# real outbound bodies. Unset => the skills fall back to untracked real URLs.
 HOST_BASE_URL="$(python3 -c "import json,sys; print(json.load(open('${ROOT}/clients/${CLIENT}/client.json')).get('host_base_url') or '')" 2>/dev/null || echo '')"
-[ -n "$HOST_BASE_URL" ] || HOST_BASE_URL="http://localhost:${SERVE_PORT}"
+HOST_URL_ARG=""
+if [ -n "$HOST_BASE_URL" ]; then
+  HOST_URL_ARG="-e HOST_BASE_URL=$HOST_BASE_URL"
+else
+  echo "NOTE: client.json.host_base_url not set — links go untracked (no localhost fallback)."
+fi
 
 SECRETS="${ROOT}/deploy/secrets.${CLIENT}.env"
 if [ -f "$SECRETS" ]; then
@@ -59,7 +67,7 @@ exec docker run --rm -it \
   -e JW_CLIENT_DIR="$CLIENT_DIR_IN_IMAGE" \
   -e JWOUT_DB="/jobworld_data/${INSTANCE}/outreach.db" \
   -e HOST_DIR="/jobworld_data/hosted" \
-  -e HOST_BASE_URL="$HOST_BASE_URL" \
+  $HOST_URL_ARG \
   -e JWOUT_SERVE_PORT="$SERVE_PORT" \
   -e JWOUT_DASHBOARD_PORT="$OUTREACH_DASH_PORT" \
   $ENV_FILE_ARG \

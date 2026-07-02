@@ -18,8 +18,10 @@ Read the run's funnel and judge it against the client's targets.
 
 1. **Report** (CONNECTOR — DB read):
    ```bash
-   jwout track report --cost "$(jq -r '.cost_per_send_usd' $JW_CLIENT_DIR/client.json)"
+   jwout track report --cost "$(jq -r '.cost_per_send_usd // 0' $JW_CLIENT_DIR/client.json)"
    ```
+   (`// 0` is required — a null config value would otherwise become the literal
+   string "null" and crash argparse's float conversion.)
    Output is per-variant: sends, delivered, bounced, open, click, view, reply,
    booked, and cost/booked.
 2. **Judge** (INSTRUCTION): compare to `success.target_booked_rate` and

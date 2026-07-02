@@ -85,7 +85,11 @@ def instantly_add_lead(*, to_email: str, subject: str, body: str,
         "last_name": last_name,
         "company_name": company,
         "personalization": personalization or subject,
-        # built-in dedup: never double-add a contact already in this campaign/list
+        # built-in dedup: never double-add a contact already in this campaign/list.
+        # CONSEQUENCE (by design): with this backend the engine adds a lead ONCE —
+        # touches 2..4 are Instantly's campaign-sequence steps, NOT re-sends through
+        # `jwout send`. A touch>1 send to the same email is a silent no-op at
+        # Instantly; do not loop the cadence through this backend.
         "skip_if_in_campaign": True,
         "skip_if_in_list": True,
         # our generated copy; the campaign's step template references {{subject}}/{{body}}
@@ -111,14 +115,19 @@ def instantly_add_lead(*, to_email: str, subject: str, body: str,
 def deliver(*, to_email: str, subject: str, body: str,
             from_email: str = "", from_name: str = "", reply_to: str = "",
             first_name: str = "", last_name: str = "", company: str = "") -> dict:
-    """Route to the SEND_BACKEND-configured backend. Returns a small result dict."""
-    backend = os.environ.get("SEND_BACKEND", "smtp").lower()
+    """Route to the SEND_BACKEND-configured backend. Returns a small result dict.
+
+    Empty env values fall through like unset ones (env-file loaders set blanks),
+    and an unknown backend RAISES rather than silently attempting SMTP — a typo'd
+    SEND_BACKEND must never fire a real relay send."""
+    backend = (os.environ.get("SEND_BACKEND") or "smtp").strip().lower()
     if backend == "instantly":
         return instantly_add_lead(
             to_email=to_email, subject=subject, body=body,
             first_name=first_name, last_name=last_name, company=company)
-    # default: smtp (dumb relay)
-    msg = build_message(to_email=to_email, subject=subject, body=body,
-                        from_email=from_email, from_name=from_name, reply_to=reply_to)
-    smtp_send(msg)
-    return {"backend": "smtp", "to": to_email}
+    if backend == "smtp":
+        msg = build_message(to_email=to_email, subject=subject, body=body,
+                            from_email=from_email, from_name=from_name, reply_to=reply_to)
+        smtp_send(msg)
+        return {"backend": "smtp", "to": to_email}
+    raise RuntimeError(f"unknown SEND_BACKEND: {backend!r} (use smtp | instantly)")

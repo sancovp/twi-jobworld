@@ -218,10 +218,19 @@ class JobworldAgent(CAVEAgent):
     def broadcast(self, message: dict):
         import asyncio
         data = json.dumps(message)
+        # On a non-async thread there is no running loop — asyncio.create_task
+        # raises RuntimeError, which is OUR calling context's problem, not the
+        # socket's: treating it as a dead client dropped live dashboard
+        # connections. Skip the frame instead; only a real per-socket failure
+        # marks a client dead.
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return  # no loop to schedule on; dashboard misses one frame, clients live
         dead = set()
         for ws in self._ws_clients:
             try:
-                asyncio.create_task(ws.send_text(data))
+                loop.create_task(ws.send_text(data))
             except Exception:
                 dead.add(ws)
         self._ws_clients -= dead
@@ -837,7 +846,19 @@ class JobworldAgent(CAVEAgent):
         if agent_id:
             agent = self.store["agents"].get(agent_id)
             if agent:
-                open_tasks = [t for t in open_tasks if t.get("dept") == agent.get("dept_id") or not t.get("agent_id")]
+                # task["dept"] is a dept NAME (create_task free string) while
+                # agent["dept_id"] is an id ("dept-<ts>") — the raw compare
+                # never matched, so the dept filter was dead (masked by the
+                # unassigned clause). Resolve the agent's dept NAME and compare
+                # case-insensitively; accept a stored id too.
+                dept = self.store["departments"].get(agent.get("dept_id")) or {}
+                dept_name = (dept.get("name") or "").strip().lower()
+                open_tasks = [
+                    t for t in open_tasks
+                    if (t.get("dept") or "").strip().lower() == dept_name
+                    or t.get("dept") == agent.get("dept_id")
+                    or not t.get("agent_id")
+                ]
         return sorted(open_tasks, key=lambda t: t["created_at"])[:3]
 
     def assign_task(self, task_id: str, agent_id: str) -> Optional[dict]:

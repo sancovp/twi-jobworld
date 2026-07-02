@@ -47,17 +47,25 @@ exactly the subject and body it is given.
      --subject "<line 1 of copy file>" \
      --body-file copy/<email>.touch<n>.txt \
      --from "<rotated from address>" \
-     --from-name "$(jq -r .from_name $JW_CLIENT_DIR/client.json)" \
-     --reply-to "$(jq -r .reply_to $JW_CLIENT_DIR/client.json)" \
+     --from-name "$(jq -r '.from_name // empty' $JW_CLIENT_DIR/client.json)" \
+     --reply-to "$(jq -r '.reply_to // empty' $JW_CLIENT_DIR/client.json)" \
      --brand "<brand>" --touch <n> --variant "<variant>" --cohort "<cohort>" \
      --asset-url "<hosted teaser URL or empty>" \
      --click-token "<contents of copy/<email>.touch<n>.token, if any>" \
-     --click-dest "$(jq -r .calendar_url "$JW_CLIENT_DIR/client.json")" \
+     --click-dest "$(jq -r '.calendar_url // empty' "$JW_CLIENT_DIR/client.json")" \
      --unsub-token "<contents of copy/<email>.touch<n>.unsub>"
    # prints: send_id=<N>
    ```
+   The `// empty` on the jq lookups is REQUIRED: a null config value must become
+   an empty flag, not the literal string "null" (a `Reply-To: null` header / a
+   dead click destination).
    The `--unsub-token` must match the token in the body's `/u/<token>` unsubscribe
    link so serve can suppress this exact recipient on one click.
+   **Instantly backend + the cadence:** with `SEND_BACKEND=instantly` the engine
+   adds each contact to the campaign ONCE (touch 1 only) — Instantly's own
+   campaign-sequence steps deliver touches 2–4 on their schedule. Do NOT loop
+   touches 2–4 through `jwout send` on this backend: the dedup flags make the
+   re-add a silent no-op at Instantly and the recorded "send" would be phantom.
    The `--click-token` must match the token in the body's tracked CTA link
    (`${HOST_BASE_URL}/c/<token>`, from `outreach-write`); `--click-dest` is the URL
    `serve` redirects that token to (the calendar link). The destination is stored
