@@ -88,13 +88,20 @@ flowchart TB
 | `clients/FLOWS.md` | the gate check (open gates → blockers + GATES.md + delivery hold) |
 | `connectors/outreach/FLOWS.md` | every non-trivial jwout verb (+ mock mode) |
 | `deploy/FLOWS.md` | image build · production run · the mock harness run |
+| `docker/FLOWS.md` | **the BASE boot (the tmux interactive-claude CEO — the original design)** · what the SDK overlay changes |
+| `sop-engine/FLOWS.md` | SOP lifecycle: record → extrude → index/search → run (standalone Node; unwired) |
 
 ## Version markers (which archi is CURRENT)
 
 - **CEO runtime:** `ClaudePMainAgent` (SDK, headless) = the MOCK/DEV harness mode.
-  The tmux interactive CEO (base CodeAgent) = the intended PRODUCTION surface
-  (client attaches; his account). A provider/model switch (Sonnet 5 without
-  MiniMax keys) is planned — see rule 08.
-- **World creation:** container entrypoint does minimal mkdirs; `instantiate.sh`
-  (template copy) is the full path. Divergence is a known gap.
+  The tmux interactive CEO = the ORIGINAL BASE DESIGN and the intended PRODUCTION
+  surface — `docker/entrypoint-jobworld.sh` launches `claude` (a real Anthropic
+  model) IN the pane and the server drives that same pane (docker/FLOWS.md Flow 1).
+  Under the SDK overlay that pane claude is ORPHANED (Flow 2). A provider/model
+  switch (Sonnet 5 without MiniMax keys) is planned — see rule 08.
+- **World creation:** the base entrypoint copies template files + skills + writes
+  the CEO CLAUDE.md (fuller than previously documented); `template/…/start.sh`
+  is the host-side equivalent. Remaining divergence: dept dirs (created by the
+  CEO via generate-employee, not by either boot path).
 - **SUPERSEDED:** nothing in this repo is dead code EXCEPT `sim/` (pointer only).
+  `sop-engine/` is live-but-unwired (no consumer yet).
