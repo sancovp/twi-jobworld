@@ -137,6 +137,9 @@ def read(*, folder: str = "INBOX", criterion: str = "UNSEEN", limit: int = 50) -
     var must fall through exactly like an unset one, or a blank REPLY_BACKEND=
     silently forces the IMAP branch under SEND_BACKEND=instantly."""
     backend = (os.environ.get("REPLY_BACKEND") or os.environ.get("SEND_BACKEND") or "imap").strip().lower()
+    from . import mock
+    if backend == "mock" or mock.enabled():
+        return mock.replies(limit=limit)
     if backend == "instantly":
         return instantly_fetch_replies(limit=limit)
     if backend == "imap":

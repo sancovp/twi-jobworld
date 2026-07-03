@@ -73,6 +73,11 @@ def search_total(
     free 1-result search. Used for TAM/SAM sizing + cube sweeps (no credits).
     employee_ranges = Apollo `organization_num_employees_ranges` (e.g. "51,200");
     industries = `q_organization_keyword_tags`."""
+    from . import mock
+    if mock.enabled():
+        return mock.market_total(kind="people", titles=titles, seniorities=seniorities,
+                                 employee_ranges=employee_ranges, industries=industries,
+                                 organization_domains=organization_domains)
     api_key = api_key or os.environ["APOLLO_API_KEY"]
     payload: dict = {"per_page": 1, "page": 1}
     if titles:
@@ -104,6 +109,11 @@ def org_total(
     comparable to Census establishment counts. Free (per_page=1 count read).
     Endpoint follows Apollo's mixed_companies search; verify the field names
     against a live call before trusting at volume (same caution as the people search)."""
+    from . import mock
+    if mock.enabled():
+        return mock.market_total(kind="orgs", employee_ranges=employee_ranges,
+                                 industries=industries,
+                                 organization_domains=organization_domains)
     api_key = api_key or os.environ["APOLLO_API_KEY"]
     payload: dict = {"per_page": 1, "page": 1}
     if employee_ranges:
@@ -172,6 +182,11 @@ def pull_contacts(
     enrich=False is a FREE preview — returns Contacts with empty email so a worker
     can see who matched before spending credits.
     """
+    from . import mock
+    if mock.enabled():
+        return mock.contacts(titles=titles, seniorities=seniorities,
+                             organization_domains=organization_domains,
+                             per_page=per_page, enrich=enrich)
     stubs = search_people(titles=titles, seniorities=seniorities,
                           email_statuses=email_statuses,
                           organization_domains=organization_domains,

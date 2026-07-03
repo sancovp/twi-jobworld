@@ -2,6 +2,26 @@
 
 Snapshot of where the worker layer stands. Update this whenever state changes.
 
+## ⚠ The verification LADDER — say which rung you mean (added 2026-07-03)
+
+"Verified" below is **verb-level**: each `jwout` verb ran in isolation + boot came up.
+That is NOT "the system runs." The rungs, in order — never report a lower rung in the
+grammar of a higher one:
+
+1. **verb-verified** — a `jwout` verb ran alone (the table below).
+2. **funnel-verified** — the whole pipeline flowed, creds-free: `deploy/mock-run.sh`
+   (`JWOUT_MOCK=1`; pull→qualify→market→video→send→reply→track→report→suppress; the
+   funnel fills, opt-out honored). ✅ DONE 2026-07-03, repeatable in seconds.
+3. **agent-loop-verified** — the REAL SDK CEO drove the departments through the campaign
+   skill against mocked verbs (`deploy/run-mock-instance.sh`; needs only the MiniMax key
+   from `~/system_config.sh`). ⏳ IN PROGRESS 2026-07-03 — the FIRST real CEO turn ever
+   attempted crashed the bundled claude CLI on missing `ps` (image lacked procps; fixed
+   in Dockerfile.sdk). Until this rung is green, the agent behavior is UNVERIFIED.
+4. **live-verified** — same loop, real creds, real sends (blocked on Instantly info).
+
+Mock layer: `connectors/outreach/src/jw_outreach/mock.py` — `JWOUT_MOCK=1` flips
+pull/send/video/reply to canned data (send IS recorded; dry-run records nothing).
+
 ## Built + verified (as of this build)
 
 | piece | state | how verified |

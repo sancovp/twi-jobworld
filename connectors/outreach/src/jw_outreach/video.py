@@ -163,6 +163,9 @@ def generate(prompt: str, out_path: str, model: str | None = None) -> str:
     """Route to VIDEO_BACKEND (default fal_kling; minimax kept as fallback)."""
     model = model or None
     backend = os.environ.get("VIDEO_BACKEND", "fal_kling").lower()
+    from . import mock
+    if backend == "mock" or mock.enabled():
+        return mock.video(prompt, out_path)
     if backend in ("fal", "fal_kling", "kling"):
         return fal_kling_generate(prompt, out_path, model=model)
     if backend == "minimax":

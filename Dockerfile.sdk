@@ -9,11 +9,19 @@
 FROM jobworld-cave:latest
 USER root
 # jq: the outreach skills read client.json with it (shell snippets in skills/outreach-*).
-RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
+# procps: the SDK's bundled claude CLI spawns `ps --ppid` to manage child processes —
+# without it the CEO's FIRST TURN dies with `Executable not found in $PATH: "ps"`
+# (found by actually running a turn 2026-07-03; boot alone never exercised this path).
+RUN apt-get update && apt-get install -y --no-install-recommends jq procps && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir 'mcp==1.12.4' 'claude-agent-sdk==0.1.19'
 COPY server/jobworld_agent.py /agent/server/jobworld_agent.py
+COPY server/FLOWS.md /agent/server/FLOWS.md
 COPY p_main_agent.py /agent/p_main_agent.py
 COPY convo_registry.py /agent/convo_registry.py
+# The dev context ships WITH the code (rule 08): any agent inside the image gets
+# the same architecture map (rule 07) + per-dir flow diagrams developers have.
+# connectors/, clients/, skills/ FLOWS.md ride in via their wholesale COPYs below.
+COPY .claude/rules/ /agent/.claude/rules/
 # --- worker layer: connectors (CODE) + clients ($content) + department agents ---
 # The outreach connector installs the `jwout` console script onto PATH for workers.
 # clients/ and agents/ are read at run time; skills/ already flow into each instance

@@ -209,3 +209,27 @@ sequenceDiagram
   CLI->>DB: record_event
   Note over W: opt-outs / hostile → append to clients/<c>/dedupe/
 ```
+
+## Mock mode (`JWOUT_MOCK=1`) — added 2026-07-03
+
+The S1 boundary faked at the connector, so the agent layer runs unchanged:
+
+```mermaid
+sequenceDiagram
+  participant A as any agent (skill unchanged)
+  participant CLI as jwout cli.py
+  participant MK as mock.py (deterministic fixtures)
+  participant DB as outreach.db (REAL)
+  A->>CLI: pull / send / video / reply (the 4 external verbs)
+  CLI->>CLI: JWOUT_MOCK=1?
+  alt mock ON
+    CLI->>MK: canned contacts / fake send_id / placeholder clip / scripted replies
+    MK->>DB: RECORDS for real (unlike dry-run, which records nothing)
+    Note over MK,DB: the funnel fills, dashboards light up, zero creds, nothing leaves the box
+  else mock OFF
+    CLI->>CLI: real backends (Apollo / SMTP·Instantly / fal·MiniMax / IMAP·Instantly)
+  end
+```
+
+All other verbs (`track host serve page dashboard qualify suppress market`) are
+already local (SQLite/filesystem/localhost HTTP) and never need mocking.

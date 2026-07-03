@@ -1,0 +1,48 @@
+{
+  "name": "B6 Studios (MOCK)",
+  "_MOCK": "THIS IS THE MOCK CLIENT for topology/system testing (S1 fully faked). Every gate below is filled with FAKE values so the ENTIRE pipeline — including delivery — runs under JWOUT_MOCK=1. NEVER use this config for a live send. The real client config is clients/b6 (its gates stay open until Avi delivers).",
+  "scope": "GENERAL outreach only — the wide net. NEVER touch Surviving the Cows, Trashed, or 7 Stories named targets (those are Avi's manual sniper pipelines). Dedupe against them before every send.",
+  "targeting": {
+    "titles": ["CMO", "Chief Marketing Officer", "VP Marketing", "VP Brand", "Head of Brand", "Head of Content", "Head of Social", "Director of Brand Marketing", "Growth Lead"],
+    "seniorities": ["director", "vp", "c_suite"],
+    "email_statuses": ["verified", "likely to engage"],
+    "domains": [],
+    "notes": "Consumer-facing brands ~$20M+ revenue that already make content or obviously should. Same ICP as b6; the contacts are fabricated by the mock pull."
+  },
+  "sending": {
+    "domains": [
+      {"domain": "mock-b6mail.example", "warmup_status": "ready", "from_addresses": ["ella.hart@mock-b6mail.example", "nora.wells@mock-b6mail.example"], "daily_cap": 50},
+      {"domain": "mock-b6tv.example", "warmup_status": "ready", "from_addresses": ["maya.brooks@mock-b6tv.example", "ivy.lane@mock-b6tv.example"], "daily_cap": 50}
+    ]
+  },
+  "from_name": "Ella Hart",
+  "reply_to": "replies@mock-b6mail.example",
+  "calendar_url": "https://calendly.example/mason-weston/15min-MOCK",
+  "variants": ["text_only", "video"],
+  "cohorts": ["engine", "manual_control"],
+  "cost_per_send_usd": 0.50,
+  "success": {
+    "target_booked_rate": 0.02,
+    "max_cost_per_meeting_usd": 200
+  },
+  "host_base_url": "http://localhost:8000",
+  "compliance": {
+    "postal_address": "123 Mock Street, Suite 0, Los Angeles, CA 90000 (MOCK ADDRESS — not real)",
+    "unsubscribe_url": "http://localhost:8000/u"
+  },
+  "economics": {
+    "avg_deal_value_usd": 150000
+  },
+  "cube": {
+    "employee_ranges": ["51,200", "201,500", "501,1000", "1001,5000", "5001,10000"],
+    "industries": ["food & beverage", "apparel", "beauty", "consumer goods", "retail"]
+  },
+  "market_crosscheck": {
+    "naics": ["311", "312", "315", "3254", "448"],
+    "empszes": "001",
+    "geo": "us",
+    "_note": "same starter NAICS as b6; values are irrelevant under mock market totals."
+  },
+  "env_profile": "mock",
+  "_needs_from_avi": {}
+}

@@ -121,6 +121,9 @@ def deliver(*, to_email: str, subject: str, body: str,
     and an unknown backend RAISES rather than silently attempting SMTP — a typo'd
     SEND_BACKEND must never fire a real relay send."""
     backend = (os.environ.get("SEND_BACKEND") or "smtp").strip().lower()
+    from . import mock
+    if backend == "mock" or mock.enabled():
+        return mock.send_result(to_email=to_email)
     if backend == "instantly":
         return instantly_add_lead(
             to_email=to_email, subject=subject, body=body,
