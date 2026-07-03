@@ -8,12 +8,23 @@
 
 ## 0. What this is
 
-ONE spine for a family of *World architectures (JobWorld first, PromptWorld/WoS
-later): **OM app (the permanent face) + cave-teams (rounds as data) + CAVE
-(runtime host) + a world-pack (per-world data)**. It replaces the hand-rolled JW
-world/CEO (~1,600 lines: `jobworld_agent.py`, `jobworld_server.py`,
-`p_main_agent.py`) with published, tested engines. The avi-jw **worker layer
-survives unchanged** (jwout + clients/ + outreach skills + mock harness).
+**JobWorld as a MODULE of cave-teams** (Isaac's correction, 2026-07-03 — NOT a
+new spine repo). cave-teams is already a library of team/world patterns on one
+substrate (`gameworld.py`, `season.py`, `metacog.py`, `npc.py`, `sim.py`);
+JobWorld is the next pattern: **`cave_teams/jobworld.py`**. `Team.__init_subclass__`
+auto-registers it → `cave({"op":"jobworld",...})` works for free, and
+`to_config()/from_config()` means **world.json IS a team config** (the world-pack
+format collapses into cave-teams' existing config face). This replaces the
+hand-rolled JW world/CEO (~1,600 lines: `jobworld_agent.py`,
+`jobworld_server.py`, `p_main_agent.py`) with the published engine.
+
+Repo layout (three existing repos, zero new ones):
+- **cave-teams** gains `jobworld.py` + `TmuxClaudeRuntime` (wrapping
+  `cave.core.agent.ClaudeCodeAgent` — canonical per the truth doc: "agents are
+  CAVE's; cave teams takes cave's agent classes") → version bump, ships on PyPI.
+- **avi-jw** stays the client/deployment repo: worker layer (jwout, skills) +
+  `clients/` + `worldpacks/b6` (client DATA never enters the library) + deploy.
+- **onionmorph** gains the `launch_team` tool (imports `cave_teams`).
 
 ## 1. Deployment view (the corrected picture — Isaac 2026-07-03)
 
@@ -165,8 +176,10 @@ session log; v2 wires this adapter.
    os.environ/OAuth was already this pattern.)
 4. **Events/org visibility v1** — what the client actually watches: jwout
    dashboard (funnel) + team session log. The JW org-chart UI is NOT v1.
-5. **B6 fallback** — current-JW ships if the spine isn't ready when warmup
+5. **B6 fallback** — current-JW ships if the module isn't ready when warmup
    completes (~2026-07-14). The b6mock round verdict = the fallback's evidence.
+6. ~~Canonical dir name~~ — **DISSOLVED** by the module decision: no new repo
+   exists; the code lands in cave-teams, the data in avi-jw, the tool in OM.
 
 ## 7. The B6 instance (the paying deployment, stated as data)
 

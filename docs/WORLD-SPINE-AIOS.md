@@ -1,9 +1,15 @@
 # *World Spine — AIOS Design (the `.claude` dir of the spine's dev repo)
 
-> **Status: DRAFT v0.1 — Fable, 2026-07-03.** Companion to `WORLD-SPINE-LLD.md`.
-> This designs what an agent BECOMES when it enters the spine repo: its identity,
-> its laws, its dev flow, and the harness gates that make a non-Fable week unable
-> to drift. THE DIRECTORY CODES THE AGENT — so the dir is designed like code.
+> **Status: DRAFT v0.2 — Fable, 2026-07-03.** Companion to `WORLD-SPINE-LLD.md`.
+> **REVISED by the module decision (LLD §0): there is NO new spine repo.** The
+> jobworld module lands in cave-teams; client packs stay in avi-jw. So this AIOS
+> design applies as EXTENSIONS to the two existing dev dirs, not a new tree:
+> **cave-teams** gets the rules/harness below scoped to the jobworld module
+> (its `.claude/` already has CLAUDE.md + LAWS.md — extend, don't replace);
+> **avi-jw** already carries rules 00–08 + FLOWS.md discipline (keep current).
+> The §1 tree below is retained as the CHECKLIST of pieces to place, with
+> `spine/` → `cave_teams/` modules and `worldpacks/` → `avi-jw/worldpacks/`.
+> THE DIRECTORY CODES THE AGENT — so the dirs are designed like code.
 
 ## 0. Design principles (why each piece exists)
 
