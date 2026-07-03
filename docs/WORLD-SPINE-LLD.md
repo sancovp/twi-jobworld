@@ -139,7 +139,17 @@ worldpack/
 | `server/jobworld_server.py` | `clients/b6`, `clients/b6mock` | OM `launch_team` tool (§3.4) |
 | `p_main_agent.py`, `convo_registry.py` | `skills/outreach-*`, dept personas | world-pack format (§4) |
 | ink-ceo dependence (OM is the face) | mock harness + diagrams/rules | JW-round golden config |
-|  | rule-05 theory (carried by cave-teams natively) | org-store port (DEFERRED — v1: funnel dashboard + events suffice) |
+|  | rule-05 theory (carried by cave-teams natively) | org-store port (SEQUENCED to v2, not lost — see below) |
+
+**The org-store port (v2, cheap by design):** the JW store (org/projects/goals/
+tasks + org-chart/goal-tree API + the index.html dashboard) is ~700
+self-contained lines with ZERO runtime coupling (never touches the CEO agent or
+tmux). Port = lift it into the world-pack state layer and feed it from
+`run_team(on_event=...)` (runner.py:144): every dispatch/response/report event →
+a store observation → tasks flip → the SAME dashboard renders. The store becomes
+a CONSUMER of the team event stream — nothing is lost, and its data source
+improves (the session log is provenance-native). v1 ships funnel dashboard +
+session log; v2 wires this adapter.
 
 ## 6. Open LLD items (resolve before the non-Fable weeks)
 
