@@ -50,16 +50,22 @@ flowchart TB
   class OM om
 ```
 
-## 2. Auth/provider profiles (the forcing fact)
+## 2. Auth/provider profiles
 
-**A Claude Max subscription is NOT API access.** Heaven runtimes (OMRuntime,
-MiniMaxRuntime) need API keys; Max backs ONLY claude code (OAuth). Therefore:
+**A Max account backs claude code in BOTH forms — interactive tmux AND the
+claude-code SDK** (the SDK spawns the claude CLI, which uses the stored OAuth
+creds; this is the intended use — Isaac develops everything this way, and
+Anthropic rolled back the announcement that would have changed it). The
+**one-time onboarding step**: attach into the box's tmux, run the `claude`
+auth flow once → creds persist in `~/.claude` on the volume → every subsequent
+agent (tmux panes AND SDK turns) rides the account like a human using it.
+Only raw-API runtimes (heaven OMRuntime, MiniMaxRuntime) need actual keys.
 
 | | Profile A — client install (B6 v1) | Profile B — scale |
 |---|---|---|
-| leader | client's claude code (tmux or SDK+OAuth) | same |
+| leader | client's claude code (tmux or SDK — both on their Max) | same |
 | workers | client's claude code tmux (serialized / low concurrency) | + MiniMax heaven runtimes (parallel, cheap) |
-| OM chat runtime | **claude-code-backed** (LLD item §6.3) | heaven path |
+| OM chat runtime | claude-code SDK on their OAuth (intended, proven daily) | heaven path |
 | client buys | nothing beyond Max (+Instantly+hosting, already budgeted) | MiniMax key |
 
 Providers are **per-agent config behind ONE seam** (§3.1) — a profile is data,
@@ -143,8 +149,10 @@ worldpack/
 2. **Finish-detection hardening** — message-file-existence as the completion
    signal (watcher), pane-scrape only as liveness. Spike this while Fable is here.
 3. **OM-on-claude-code runtime** (Profile A's OM chat) — back OMChatAgent's
-   runtime with the claude-code SDK + OAuth instead of heaven. Verify OAuth
-   works headless in the app context.
+   runtime with the claude-code SDK + OAuth instead of heaven. OAuth-under-SDK
+   is the intended, proven path (§2) — this is just the adapter to write, not
+   a feasibility question. (`p_main_agent._provider_env()` returning `{}` →
+   os.environ/OAuth was already this pattern.)
 4. **Events/org visibility v1** — what the client actually watches: jwout
    dashboard (funnel) + team session log. The JW org-chart UI is NOT v1.
 5. **B6 fallback** — current-JW ships if the spine isn't ready when warmup
