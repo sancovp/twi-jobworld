@@ -5,6 +5,16 @@
 > named (Isaac's call); then this file MOVES there and this copy becomes a pointer.
 > Companions: `~/avi-jw/.claude/rules/07-ARCHITECTURE.md` (current JW),
 > `05-AUTONOMY-BRIDGE.md` (the theory), cave-teams `THE-ONLY-SOURCE-OF-TRUTH.md`.
+>
+> **⚠ RECONTEXTUALIZED 2026-07-06 (operadic train §71 — this doc's mechanics stay valid, its FRAMING is superseded):**
+> "JobWorld as a cave-teams MODULE" (§0) is the TEAM-FACE of the object. Post-woom-rescope the canonical framing
+> is: **JobWorld is a woom version** — woom makes the team AND the place-you-visit/watch THE SAME THING
+> (homoiconic `agent=team=world`; cave-teams provides the primitives, woom presents the visitable world). AviJW =
+> a jobworld impl that predates the general woom-World-class being factored out → the work is **separation +
+> packaging** (retire the hand-rolled JW server/CEO onto general woom; AviJW v2 = a forked, deployable
+> woom-version). The **runtime seam below (§2/§3.1/§3.2: tmux/SDK-claude/MiniMax-heaven, Profile A/B) is
+> UNCHANGED and still canonical** — it is exactly "runs in all modes." `cave_teams/jobworld.py` is still ABSENT
+> (unbuilt); the woom substrate (`onionmorph/woom/{engine,builder,astral,meta_team}.py`) has substantially landed.
 
 ## 0. What this is
 

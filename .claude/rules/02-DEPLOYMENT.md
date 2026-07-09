@@ -105,3 +105,19 @@ is gitignored (only `secrets.example.env` is tracked).
   **Instantly** as the send/reply backend — confirm the Kling slug + Instantly filter
   params on the first live call (see `connectors/outreach/README.md`).
 These are provisioning/verification, gated on client sign-off — not more code.
+
+## Dev container + prod update loop (added 2026-06-27)
+
+**The model: image = toolchain · volumes = state · git = the export. Work is never
+baked back into an image, so no CI/CD is required at n=1** (adopt it at
+second-instance or deploy-fatigue; `ci.yml` is upstream plugin lint only, and
+`Dockerfile.sdk`'s base `jobworld-cave:latest` is local — GH couldn't build it anyway).
+
+| piece | file | what |
+|---|---|---|
+| dev container | `deploy/Dockerfile.dev` + `deploy/dev-shell.sh` | Claude Code shell logged into the CLIENT's account (named volume `avi-jw-client-claude` at `~/.claude`) + the real repo bind-mounted at `/workspace`. Host login NEVER mounted — client + personal accounts run simultaneously. No GitHub creds inside: commit in-container, push from host. First run: `claude login` in an INCOGNITO window with the client account. |
+| prod update | `deploy/update-prod.sh <client>` | pull → **preflight gate** → build → swap container detached (`DETACH=1 run-instance.sh` → `-d --restart unless-stopped`) → health check. Volumes (db, hosted, login) persist across swaps; preflight failure leaves the old container running. |
+
+Production home = the small VPS already budgeted as the "link tracking host"
+(runs the engine container + `jwout serve`). The client NEVER builds or runs the
+engine — service model; they buy outcomes, the engine stays ours.

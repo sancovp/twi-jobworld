@@ -54,7 +54,15 @@ VOLUME="${INSTANCE}-data"
 
 echo "JW dashboard http://localhost:${DASH_PORT}  ·  outreach dashboard http://localhost:${OUTREACH_DASH_PORT}  ·  API ${API_PORT}  ·  serve ${SERVE_PORT}  ·  client ${CLIENT}"
 
-exec docker run --rm -it \
+# DETACH=1 (prod / update-prod.sh): run in the background with a restart policy.
+# Default (dev): interactive foreground, removed on exit.
+if [ "${DETACH:-}" = "1" ]; then
+  MODE_ARGS="-d --restart unless-stopped"
+else
+  MODE_ARGS="--rm -it"
+fi
+
+exec docker run $MODE_ARGS \
   --name "$INSTANCE" \
   -p "${DASH_PORT}:${DASH_PORT}" \
   -p "${API_PORT}:${API_PORT}" \
