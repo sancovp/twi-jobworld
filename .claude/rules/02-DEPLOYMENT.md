@@ -118,12 +118,17 @@ us only on breakage. Revenue: build fee + **maintenance/update subscription
 agency (dogfooding) — a metamarketing business with its own software.
 
 **Consequence: the image IS the deliverable, so CI/CD + registry + auto-update
-are REQUIRED product infrastructure** (not optional polish):
-image = the product · volumes on THEIR box = their state (login, DB, hosted
-assets — survive every update) · GHCR = the paid update channel · auto-update
-(watchtower or an update timer) = "we push, their instance refreshes."
-Blocker to clear: `Dockerfile.sdk`'s base `jobworld-cave:latest` exists only
-locally — it must be published to GHCR before CI can build the app image.
+are REQUIRED product infrastructure** — and they're BUILT (2026-06-27):
+
+| stage | file | what |
+|---|---|---|
+| base publish | `deploy/push-base.sh` | tag+push local `jobworld-cave` → `ghcr.io/sancovp/jobworld-cave`. **The one human-gated step** (needs `gh auth refresh -s write:packages,read:packages` + `docker login ghcr.io` once). |
+| app CI | `.github/workflows/image.yml` | push to main/worker-layer → build `Dockerfile.sdk` (parameterized `ARG BASE_IMAGE`, defaults to the GHCR base) → push `ghcr.io/<owner>/avi-jw:{latest,sha}` via `GITHUB_TOKEN` (`packages: write` — no personal scope needed). **This IS the paid update channel.** |
+| buyer stack | `deploy/client/{docker-compose.yml,install.sh,update.sh,env.example,secrets.env.example,RUNBOOK.md}` | the instance + **watchtower** (label-scoped auto-update) on THEIR VPS. State in named volumes (`jw-data` = DB+hosted, `jw-claude` = their Max login) survives every pull. `.env`/`secrets.env` gitignored. |
+
+`Dockerfile.sdk` FROM is now `ARG BASE_IMAGE` (CI → GHCR base; local →
+`--build-arg BASE_IMAGE=jobworld-cave:latest`, verified still builds). Blocker
+before CI can run green: `push-base.sh` must run once (base is local-only today).
 
 | piece | file | what |
 |---|---|---|

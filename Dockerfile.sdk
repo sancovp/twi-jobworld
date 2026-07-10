@@ -6,7 +6,12 @@
 #      because the SDK CEO's `claude --dangerously-skip-permissions` cannot run as root.
 #   4. the worker layer: the `jwout` outreach connector (installed), client configs, and
 #      department agents (see .claude/rules/00-WORKER-LAYER-ARCHITECTURE.md).
-FROM jobworld-cave:latest
+# BASE_IMAGE is parameterized so CI pulls the PUBLISHED base from GHCR while a
+# local build can point at the local tag:
+#   local:  docker build -f Dockerfile.sdk --build-arg BASE_IMAGE=jobworld-cave:latest .
+#   ci:     defaults to ghcr.io/sancovp/jobworld-cave:latest (published via deploy/push-base.sh)
+ARG BASE_IMAGE=ghcr.io/sancovp/jobworld-cave:latest
+FROM ${BASE_IMAGE}
 USER root
 # jq: the outreach skills read client.json with it (shell snippets in skills/outreach-*).
 # procps: the SDK's bundled claude CLI spawns `ps --ppid` to manage child processes —

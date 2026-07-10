@@ -1,0 +1,52 @@
+# Buyer-side stack: the sold JobWorld instance + hands-free auto-update.
+# State lives in named volumes (survive every update). Config in .env + secrets.env.
+#
+#   docker compose --env-file .env up -d
+#
+# The vendor pushes a new image -> watchtower pulls it within the poll interval
+# and recreates the instance, volumes intact. Support-on-breakage only.
+services:
+  instance:
+    image: ghcr.io/${GHCR_OWNER:-sancovp}/avi-jw:latest
+    container_name: ${INSTANCE_NAME:-b6-outreach}
+    restart: unless-stopped
+    env_file:
+      - ./secrets.env            # the client's keys (Instantly/fal/etc), gitignored
+    environment:
+      JOBWORLD_INSTANCE: ${INSTANCE_NAME:-b6-outreach}
+      JOBWORLD_PORT: "8501"
+      JW_CLIENT: ${JW_CLIENT:-b6}
+      JW_CLIENT_DIR: /agent/clients/${JW_CLIENT:-b6}
+      JWOUT_DB: /jobworld_data/${INSTANCE_NAME:-b6-outreach}/outreach.db
+      HOST_DIR: /jobworld_data/hosted
+      HOST_BASE_URL: ${HOST_BASE_URL}          # the box's public tracked-link domain
+      JWOUT_SERVE_PORT: "8000"
+      JWOUT_DASHBOARD_PORT: "8787"
+    volumes:
+      - jw-data:/jobworld_data                 # DB + hosted assets (view/click state)
+      - jw-claude:/home/ceo/.claude            # the instance's Claude Max login
+    ports:
+      - "8000:8000"                            # jwout serve — PUBLIC (tracked links + unsubscribe)
+      - "127.0.0.1:8501:8501"                  # JW dashboard — loopback (operator only)
+      - "127.0.0.1:8787:8787"                  # outreach dashboard — loopback (operator only)
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+
+  # Auto-update: pulls a newer avi-jw:latest and recreates `instance`, keeping
+  # volumes. Label-scoped so it ONLY touches the instance, nothing else on the box.
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: ${INSTANCE_NAME:-b6-outreach}-updater
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.docker/config.json:/config.json:ro   # GHCR pull creds
+    command: >
+      --label-enable
+      --cleanup
+      --interval ${UPDATE_INTERVAL:-3600}
+      ${INSTANCE_NAME:-b6-outreach}
+
+volumes:
+  jw-data:
+  jw-claude:
