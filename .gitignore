@@ -41,3 +41,6 @@ deploy/secrets*.env
 # buyer-side filled config (never commit)
 deploy/client/.env
 deploy/client/secrets.env
+
+# large image tarballs — never commit
+deploy/artifacts/
