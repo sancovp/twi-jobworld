@@ -106,18 +106,29 @@ is gitignored (only `secrets.example.env` is tracked).
   params on the first live call (see `connectors/outreach/README.md`).
 These are provisioning/verification, gated on client sign-off — not more code.
 
-## Dev container + prod update loop (added 2026-06-27)
+## The business/deployment model (CORRECTED 2026-06-27 — the agency model)
 
-**The model: image = toolchain · volumes = state · git = the export. Work is never
-baked back into an image, so no CI/CD is required at n=1** (adopt it at
-second-instance or deploy-fatigue; `ci.yml` is upstream plugin lint only, and
-`Dockerfile.sdk`'s base `jobworld-cave:latest` is local — GH couldn't build it anyway).
+**JobWorld instances are SOLD AND HANDED OVER, not operated by us.** The chain:
+**us (vendor: build · maintain · update-channel · host)** → **agencies (configure +
+operate + sell; Avi's SCG first — the instance's USER is Avi or his hire, never
+Isaac)** → **end client (B6)**. The system operates itself; the agency user
+supervises via the readouts (`/ops`, `/business`, Slack, Unibox) and escalates to
+us only on breakage. Revenue: build fee + **maintenance/update subscription
+(= GHCR pull access)** + **VPS resale** + success upside. We are also the first
+agency (dogfooding) — a metamarketing business with its own software.
+
+**Consequence: the image IS the deliverable, so CI/CD + registry + auto-update
+are REQUIRED product infrastructure** (not optional polish):
+image = the product · volumes on THEIR box = their state (login, DB, hosted
+assets — survive every update) · GHCR = the paid update channel · auto-update
+(watchtower or an update timer) = "we push, their instance refreshes."
+Blocker to clear: `Dockerfile.sdk`'s base `jobworld-cave:latest` exists only
+locally — it must be published to GHCR before CI can build the app image.
 
 | piece | file | what |
 |---|---|---|
-| dev container | `deploy/Dockerfile.dev` + `deploy/dev-shell.sh` | Claude Code shell logged into the CLIENT's account (named volume `avi-jw-client-claude` at `~/.claude`) + the real repo bind-mounted at `/workspace`. Host login NEVER mounted — client + personal accounts run simultaneously. No GitHub creds inside: commit in-container, push from host. First run: `claude login` in an INCOGNITO window with the client account. |
-| prod update | `deploy/update-prod.sh <client>` | pull → **preflight gate** → build → swap container detached (`DETACH=1 run-instance.sh` → `-d --restart unless-stopped`) → health check. Volumes (db, hosted, login) persist across swaps; preflight failure leaves the old container running. |
+| dev container | `deploy/Dockerfile.dev` + `deploy/dev-shell.sh` | Claude Code shell logged into the INSTANCE-OWNER's account (named volume `avi-jw-client-claude` at `~/.claude`) + the repo bind-mounted at `/workspace` — build/test AS the instance owner, then hand the seat over. Host login never mounted; both accounts run simultaneously. No GitHub creds inside. First run: `claude login` in an INCOGNITO window with the instance-owner account. |
+| instance update | `deploy/update-prod.sh <client>` | today: pull→preflight→build→detached swap→health (build-based, runs where the repo is). BECOMES the buyer-side `update.sh` (docker pull from GHCR → swap) once the registry pipeline exists; volumes persist either way; preflight failure leaves the old container running. |
 
-Production home = the small VPS already budgeted as the "link tracking host"
-(runs the engine container + `jwout serve`). The client NEVER builds or runs the
-engine — service model; they buy outcomes, the engine stays ours.
+Instance home = a small VPS **we sell them** (runs the engine container +
+`jwout serve` 24/7 — tracked links + unsubscribe must never sleep).
