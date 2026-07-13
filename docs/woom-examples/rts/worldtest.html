@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>agent-rts — WORLD-DUAL v1 (inside-out concentric scale-model)</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0e18; color: #cfe0ff; font: 12px ui-monospace, Menlo, monospace; overflow: hidden; }
+    #c { display: block; }
+    #status { position: fixed; top: 10px; left: 14px; z-index: 3; white-space: pre; text-shadow: 0 1px 3px #000; line-height: 1.45; pointer-events: none; }
+    #status b { color: #8fe6ff; }
+    #bar { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; gap: 8px; }
+    #bar button { background: #16203a; color: #cfe0ff; border: 1px solid #3a5688; border-radius: 6px; padding: 8px 12px; font: inherit; cursor: pointer; }
+    #bar button:hover { background: #223357; border-color: #6fb0ff; }
+    #anchor-form { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 5;
+      background: rgba(12,18,34,0.96); border: 1px solid #3a5688; border-radius: 12px; padding: 22px 26px; width: 340px; box-shadow: 0 12px 48px #000a; }
+    #anchor-form h2 { margin: 0 0 4px; color: #8fe6ff; font-size: 15px; }
+    #anchor-form p { margin: 0 0 14px; color: #8aa0c8; font-size: 11px; line-height: 1.4; }
+    #anchor-form label { display: block; margin: 7px 0 2px; color: #9fb4e0; }
+    #anchor-form input { width: 100%; box-sizing: border-box; background: #0c1526; color: #eef4ff; border: 1px solid #2a3d63; border-radius: 5px; padding: 6px 8px; font: inherit; }
+    #anchor-form .ring-d { color: #6fb0ff; }
+    #generate { margin-top: 16px; width: 100%; background: #1d3a6e; color: #eef4ff; border: 1px solid #6fb0ff; border-radius: 6px; padding: 10px; font: inherit; cursor: pointer; }
+    #generate:hover { background: #26529e; }
+  </style>
+</head>
+<body>
+  <div id="status">building world…</div>
+  <canvas id="c"></canvas>
+
+  <div id="anchor-form" style="display:none">
+    <h2>Virtualize your world — inside out</h2>
+    <p>Typed anchors are the primary ingest. What we know is generated dense; the unknown is blocked-out and fills in as knowledge grows. Each ring places on the Poincaré disk at r = tanh(k·d/2).</p>
+    <label><span class="ring-d">d0</span> · room (life-size, full res)</label><input id="a-room" value="my studio" />
+    <label><span class="ring-d">d1</span> · house</label><input id="a-house" value="the flat" />
+    <label><span class="ring-d">d2</span> · neighborhood</label><input id="a-neighborhood" value="riverside" />
+    <label><span class="ring-d">d3</span> · city</label><input id="a-city" value="portland" />
+    <label><span class="ring-d">d4</span> · state</label><input id="a-state" value="oregon" />
+    <label><span class="ring-d">d5</span> · country</label><input id="a-country" value="usa" />
+    <label><span class="ring-d">d6</span> · Earth (silhouette)</label><input id="a-earth" value="earth" />
+    <button id="generate">Generate world →</button>
+  </div>
+
+  <div id="bar">
+    <button data-mode="character">1 · Room (character)</button>
+    <button data-mode="world">2 · Enter world</button>
+    <button data-mode="god">3 · God screen</button>
+    <button id="open-form">✎ anchors</button>
+  </div>
+
+  <script type="module" src="./src/worldtest.ts"></script>
+</body>
+</html>

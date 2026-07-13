@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[Community Name] - Application Terminal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #1a1b26;
+      color: #a9b1d6;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .terminal {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .window-chrome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #24283b;
+      border-radius: 8px 8px 0 0;
+    }
+    
+    .window-button {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    
+    .window-button.red { background: #f7768e; }
+    .window-button.yellow { background: #e0af68; }
+    .window-button.green { background: #9ece6a; }
+    
+    .window-title {
+      flex: 1;
+      text-align: center;
+      color: #565f89;
+      font-size: 12px;
+    }
+    
+    .terminal-body {
+      background: #1a1b26;
+      border: 1px solid #24283b;
+      border-top: none;
+      padding: 20px;
+      min-height: 400px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    
+    .output {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    .input-line {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #1a1b26;
+      border: 1px solid #24283b;
+      border-top: none;
+    }
+    
+    .prompt {
+      color: #9ece6a;
+      margin-right: 8px;
+      font-weight: bold;
+    }
+    
+    .terminal-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #a9b1d6;
+      font-family: inherit;
+      font-size: inherit;
+      outline: none;
+    }
+    
+    .terminal-input::placeholder {
+      color: #565f89;
+    }
+    
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: #24283b;
+      border-radius: 0 0 8px 8px;
+      font-size: 12px;
+      color: #565f89;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ece6a;
+    }
+    
+    /* Colors */
+    .green { color: #9ece6a; }
+    .yellow { color: #e0af68; }
+    .red { color: #f7768e; }
+    .cyan { color: #7dcfff; }
+    .magenta { color: #bb9af7; }
+    .muted { color: #565f89; }
+    
+    /* Achievement notification */
+    .achievement {
+      position: fixed;
+      top: 20px;
+      right: -320px;
+      width: 300px;
+      background: linear-gradient(135deg, #1a1b26 0%, #24283b 100%);
+      border: 1px solid #9ece6a;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      transition: right 0.3s ease-out;
+      z-index: 1000;
+    }
+    
+    .achievement.visible { right: 20px; }
+    .achievement-icon { font-size: 28px; }
+    .achievement-title { color: #9ece6a; font-size: 10px; text-transform: uppercase; }
+    .achievement-name { color: #e0af68; font-size: 14px; font-weight: bold; }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+      .terminal { padding: 10px; }
+      .terminal-body { padding: 12px; }
+      .terminal-input { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="window-chrome">
+      <div class="window-button red"></div>
+      <div class="window-button yellow"></div>
+      <div class="window-button green"></div>
+      <div class="window-title">[community-name] — bash</div>
+    </div>
+    
+    <div class="terminal-body">
+      <div id="output" class="output"></div>
+    </div>
+    
+    <div class="input-line">
+      <span class="prompt">$</span>
+      <input 
+        type="text" 
+        id="input" 
+        class="terminal-input"
+        placeholder="Type a command..."
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+    </div>
+    
+    <div class="status-bar">
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span id="status">Connected</span>
+      </div>
+      <div id="skill">Skill Level: 0</div>
+    </div>
+  </div>
+
+  <div id="achievement" class="achievement">
+    <div class="achievement-icon">🏆</div>
+    <div>
+      <div class="achievement-title">Achievement Unlocked!</div>
+      <div id="achievement-name" class="achievement-name"></div>
+    </div>
+  </div>
+
+  <script>
+    // === CONFIGURATION - CUSTOMIZE THIS ===
+    const CONFIG = {
+      name: '[Community Name]',
+      command: '[custom]',
+      tagline: '[Your tagline here]',
+      hashtag: '#YourHashtag',
+      handle: '@YourHandle'
+    };
+
+    // === STATE ===
+    const state = {
+      user: {},
+      achievements: {},
+      currentPath: '/home/user',
+      history: [],
+      historyIndex: -1,
+      phase: 'welcome',
+      formStep: 0
+    };
+
+    // === ACHIEVEMENTS ===
+    const ACHIEVEMENTS = {
+      helper: 'Helper',
+      explorer: 'Explorer',
+      hiddenSeeker: 'Hidden Seeker',
+      fileReader: 'File Reader',
+      secretHunter: 'Secret Hunter',
+      navigator: 'Navigator',
+      superUser: 'Super User',
+      interruptor: 'Interruptor',
+      cleanSlate: 'Clean Slate',
+      timeTraveler: 'Time Traveler',
+      selfAware: 'Self Aware',
+      pathFinder: 'Path Finder',
+      editorWars: 'Editor Wars',
+      patternMatcher: 'Pattern Matcher',
+      manualReader: 'Manual Reader',
+      customWhisperer: `${CONFIG.name} Whisperer`
+    };
+
+    // === DOM ===
+    const output = document.getElementById('output');
+    const input = document.getElementById('input');
+    const status = document.getElementById('status');
+    const skill = document.getElementById('skill');
+    const achievementEl = document.getElementById('achievement');
+    const achievementName = document.getElementById('achievement-name');
+
+    // === INIT ===
+    function init() {
+      showWelcome();
+      input.focus();
+      input.addEventListener('keydown', handleKey);
+      document.addEventListener('keydown', handleGlobalKey);
+    }
+
+    function showWelcome() {
+      print(`<span class="yellow">
+   [YOUR ASCII ART HERE]
+</span>
+
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+  Welcome to the ${CONFIG.name} application terminal
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+
+${CONFIG.tagline}
+
+Type <span class="green">"start"</span> to begin your application...
+<span class="yellow">Or explore like a true developer would. 😉</span>
+`);
+    }
+
+    // === INPUT HANDLING ===
+    function handleKey(e) {
+      if (e.key === 'Enter') {
+        const cmd = input.value.trim();
+        if (cmd) {
+          state.history.push(cmd);
+          state.historyIndex = state.history.length;
+          
+          if (state.phase === 'form') {
+            handleFormInput(cmd);
+          } else {
+            processCommand(cmd);
+          }
+        }
+        input.value = '';
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (state.historyIndex > 0) {
+          state.historyIndex--;
+          input.value = state.history[state.historyIndex];
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (state.historyIndex < state.history.length - 1) {
+          state.historyIndex++;
+          input.value = state.history[state.historyIndex];
+        } else {
+          state.historyIndex = state.history.length;
+          input.value = '';
+        }
+      }
+    }
+
+    function handleGlobalKey(e) {
+      if (e.ctrlKey && e.key === 'c') {
+        print('^C');
+        unlock('interruptor');
+        input.value = '';
+      }
+    }
+
+    // === COMMAND PROCESSING ===
+    function processCommand(cmd) {
+      print(`<span class="green">$</span> ${escapeHtml(cmd)}`);
+      
+      const parts = cmd.toLowerCase().split(/\s+/);
+      const command = parts[0];
+      const args = parts.slice(1);
+      
+      let response;
+      
+      switch(command) {
+        case 'help':
+        case '?':
+          unlock('helper');
+          response = cmdHelp();
+          break;
+        case 'ls':
+          unlock('explorer');
+          if (args.includes('-la') || args.includes('-a')) unlock('hiddenSeeker');
+          response = cmdLs(args);
+          break;
+        case 'cat':
+          unlock('fileReader');
+          if (args[0]?.startsWith('.')) unlock('secretHunter');
+          response = cmdCat(args[0]);
+          break;
+        case 'cd':
+          unlock('navigator');
+          response = cmdCd(args[0]);
+          break;
+        case 'pwd':
+          unlock('pathFinder');
+          response = state.currentPath;
+          break;
+        case 'whoami':
+          unlock('selfAware');
+          response = cmdWhoami();
+          break;
+        case 'clear':
+          unlock('cleanSlate');
+          output.innerHTML = '';
+          return;
+        case 'history':
+          unlock('timeTraveler');
+          response = cmdHistory();
+          break;
+        case 'sudo':
+          unlock('superUser');
+          response = cmdSudo();
+          break;
+        case 'vim':
+        case 'vi':
+        case 'nano':
+          unlock('editorWars');
+          response = cmdEditor();
+          break;
+        case 'grep':
+          unlock('patternMatcher');
+          response = '<span class="red">grep: missing pattern</span>';
+          break;
+        case 'man':
+          unlock('manualReader');
+          response = cmdMan();
+          break;
+        case 'start':
+          startForm();
+          return;
+        case 'exit':
+          response = cmdExit();
+          break;
+        case CONFIG.command.toLowerCase():
+          unlock('customWhisperer');
+          response = cmdCustom(args);
+          break;
+        default:
+          response = `<span class="red">Command not found: ${escapeHtml(command)}</span>
+Type "help" for available commands`;
+      }
+      
+      print(response);
+    }
+
+    // === COMMANDS ===
+    function cmdHelp() {
+      return `Available Commands:
+  help          Show this help message
+  start         Begin the application process
+  clear         Clear the terminal
+  ls            List directory contents
+  cat <file>    Read a file
+
+<span class="yellow">Tip: Power users know there are more commands...
+     Try exploring like you would in a real terminal!</span>`;
+    }
+
+    function cmdLs(args) {
+      const showHidden = args.includes('-la') || args.includes('-a');
+      let files = '  README.md\n  apply.sh\n  requirements.txt';
+      if (showHidden) {
+        files += '\n  <span class="muted">.config</span>\n  <span class="cyan">.secrets/</span>';
+        files += '\n\n<span class="yellow">Hint: Hidden files often contain secrets...</span>';
+      }
+      return files;
+    }
+
+    function cmdCat(file) {
+      if (!file) return '<span class="red">cat: missing operand</span>';
+      
+      const files = {
+        'readme.md': `# ${CONFIG.name}\n\n${CONFIG.tagline}\n\nHint: Not everything is visible by default.`,
+        '.config': `# Secret Configuration\n\nMEMBER_MODE=true\nHINT="Try '${CONFIG.command} --unlock'"`,
+      };
+      
+      const content = files[file.toLowerCase()];
+      if (!content) {
+        return `<span class="red">cat: ${escapeHtml(file)}: No such file</span>
+<span class="yellow">Hint: Try 'cat README.md'</span>`;
+      }
+      return content;
+    }
+
+    function cmdCd(dir) {
+      if (!dir) return '';
+      if (dir === '.secrets') {
+        return `<span class="cyan">Changed to ~/.secrets</span>
+<span class="green">You found the secrets directory!</span>`;
+      }
+      return `<span class="red">cd: ${escapeHtml(dir)}: No such file or directory</span>`;
+    }
+
+    function cmdWhoami() {
+      const count = Object.keys(state.achievements).length;
+      const total = Object.keys(ACHIEVEMENTS).length;
+      return `You are: ${count >= 6 ? 'Member ✓' : 'Aspiring Member'}
+<span class="green">Skill Level: ${count}</span>
+<span class="yellow">${total - count} more eggs to go!</span>`;
+    }
+
+    function cmdHistory() {
+      return `Command History:
+  1  ls
+  2  help
+
+<span class="yellow">Tip: Use ↑/↓ arrows to navigate history</span>`;
+    }
+
+    function cmdSudo() {
+      return `[sudo] password for user: ********
+
+<span class="yellow">🔐 ELEVATED ACCESS ATTEMPT DETECTED</span>
+
+Nice try! Real developers don't need sudo...
+They find the hidden paths instead.`;
+    }
+
+    function cmdEditor() {
+      return `Opening vim...
+  ~
+  ~
+  ~  Welcome to VIM - the editor that traps souls
+  ~
+  ~  Just kidding! Press any key to escape.
+  ~
+
+<span class="green">Achievement unlocked: Editor Wars participant!</span>`;
+    }
+
+    function cmdMan() {
+      return `No manual entry for that topic.
+
+<span class="cyan">But here's a manual for becoming a power user:</span>
+  1. Explore the file system (ls, cd, cat)
+  2. Find hidden files (ls -la)
+  3. Try the "${CONFIG.command}" command
+  4. Collect easter eggs to unlock the invite`;
+    }
+
+    function cmdExit() {
+      return `Goodbye! Come back when you're ready.
+
+Just kidding, you can't exit. This is your destiny now.
+Try "start" to begin your application!`;
+    }
+
+    function cmdCustom(args) {
+      if (args[0] === '--help') {
+        return `${CONFIG.name} CLI
+
+Usage: ${CONFIG.command} [options]
+
+Options:
+  --help        Show this help
+  --unlock      Check unlock status
+  join --force  Force join`;
+      }
+      
+      if (args[0] === '--unlock') {
+        const count = Object.keys(state.achievements).length;
+        return `🔓 UNLOCK SEQUENCE INITIATED
+
+<span class="green">Skill Level: ${count}</span>
+Find ${Math.max(0, 6 - count)} more eggs to unlock invite!`;
+      }
+      
+      if (args[0] === 'join' && args[1] === '--force') {
+        return showQualified();
+      }
+      
+      return `${CONFIG.name} CLI
+<span class="green">You found the secret command!</span>
+<span class="yellow">Try: ${CONFIG.command} --help</span>`;
+    }
+
+    function showQualified() {
+      const count = Object.keys(state.achievements).length;
+      const total = Object.keys(ACHIEVEMENTS).length;
+      const pct = Math.round((count / total) * 100);
+      const bar = '█'.repeat(Math.floor(pct / 10)) + '░'.repeat(10 - Math.floor(pct / 10));
+      
+      if (count >= total) {
+        status.textContent = '< ELITE <';
+      } else if (count >= 6) {
+        status.textContent = 'MEMBER DETECTED';
+      }
+      
+      return `
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+     <span class="green">🎉 CONGRATULATIONS - YOU QUALIFIED! 🎉</span>
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+
+You've proven your skills. Impressive work.
+
+<span class="cyan">───────────────────────────────────────────────────────────────</span>
+  <span class="yellow">⚠️  COMMUNITY CURRENTLY AT CAPACITY</span>
+<span class="cyan">───────────────────────────────────────────────────────────────</span>
+
+We'll email you when a spot opens up.
+
+  YOUR STATUS: [${bar}] ${count}/${total}
+
+${count >= total ? `
+<span class="green">⚡ ELITE STATUS ACHIEVED ⚡</span>
+Screenshot this. Share: ${CONFIG.hashtag} ${CONFIG.handle}
+` : `
+<span class="yellow">💡 Find more easter eggs to boost your priority!</span>
+`}
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>`;
+    }
+
+    // === FORM ===
+    const FORM_STEPS = [
+      { key: 'name', prompt: 'What is your full name?' },
+      { key: 'email', prompt: "What's your email address?" },
+      { key: 'company', prompt: 'What company do you work at?' },
+      { key: 'reason', prompt: 'Why do you want to join?\n(Brief is fine)' }
+    ];
+
+    function startForm() {
+      state.phase = 'form';
+      state.formStep = 0;
+      print(`
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+            ${CONFIG.name.toUpperCase()} APPLICATION
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+
+${FORM_STEPS[0].prompt}`);
+    }
+
+    function handleFormInput(value) {
+      const step = FORM_STEPS[state.formStep];
+      state.user[step.key] = value;
+      
+      print(`<span class="green">$</span> ${escapeHtml(value)}`);
+      
+      state.formStep++;
+      
+      if (state.formStep < FORM_STEPS.length) {
+        print(`\n${FORM_STEPS[state.formStep].prompt}`);
+      } else {
+        completeForm();
+      }
+    }
+
+    function completeForm() {
+      state.phase = 'exploring';
+      print(`
+<span class="green">Thanks!</span>
+
+Processing your application...
+[████████████████████████████████████████] 100%
+
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+          <span class="green">THANK YOU FOR APPLYING!</span>
+<span class="cyan">═══════════════════════════════════════════════════════════════</span>
+
+You've been added to our waitlist.
+
+<span class="yellow">💡 Pro tip: There might be more to this terminal than meets
+   the eye. The best developers tend to explore...</span>
+
+Try commands like "help", "ls -la", or "${CONFIG.command}"
+`);
+      
+      // TODO: Send to your backend
+      console.log('Form submitted:', state.user);
+    }
+
+    // === ACHIEVEMENTS ===
+    function unlock(key) {
+      if (state.achievements[key]) return;
+      
+      state.achievements[key] = true;
+      const count = Object.keys(state.achievements).length;
+      
+      skill.textContent = `Skill Level: ${count}`;
+      
+      achievementName.textContent = ACHIEVEMENTS[key];
+      achievementEl.classList.add('visible');
+      setTimeout(() => achievementEl.classList.remove('visible'), 2500);
+    }
+
+    // === UTILS ===
+    function print(text) {
+      output.innerHTML += text + '\n';
+      output.parentElement.scrollTop = output.parentElement.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // === START ===
+    init();
+  </script>
+</body>
+</html>

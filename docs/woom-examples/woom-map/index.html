@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WOOM MAP — free geodata ingest (OSM / Overpass)</title>
+  <style>
+    :root { --ink:#dfe9ff; --dim:#8aa0c8; --astral:#6fb0ff; --edge:#2a3d63; --panel:rgba(10,15,28,0.92); }
+    * { box-sizing:border-box; }
+    html,body { margin:0; height:100%; background:#070a12; color:var(--ink);
+      font-family: ui-sans-serif,-apple-system,"Segoe UI",Inter,system-ui,sans-serif; overflow:hidden; }
+    #c { display:block; position:fixed; inset:0; z-index:0; }
+    #panel { position:fixed; top:16px; left:16px; z-index:3; width:340px;
+      background:var(--panel); backdrop-filter:blur(8px); border:1px solid var(--edge);
+      border-radius:12px; padding:16px 18px; box-shadow:0 12px 40px #000a; }
+    #panel h1 { margin:0 0 3px; font-size:15px; letter-spacing:0.02em; }
+    #panel h1 b { color:var(--astral); }
+    #panel .sub { margin:0 0 12px; font-size:11px; color:var(--dim); line-height:1.4; }
+    #q { width:100%; background:#0b1120; color:var(--ink); border:1px solid var(--edge);
+      border-radius:8px; padding:10px 12px; font:inherit; font-size:13px; outline:none; }
+    #q:focus { border-color:var(--astral); }
+    .row { display:flex; gap:8px; margin-top:8px; align-items:center; }
+    #build { flex:1; background:linear-gradient(180deg,#2a63c8,#1d3a7e); color:#eef4ff;
+      border:1px solid var(--astral); border-radius:8px; padding:10px; font:inherit; font-size:13px;
+      font-weight:650; cursor:pointer; }
+    #build:hover { filter:brightness(1.12); }
+    #build:disabled { opacity:0.5; cursor:default; }
+    label.radius { font-size:11px; color:var(--dim); display:flex; align-items:center; gap:6px; }
+    #radius { width:70px; background:#0b1120; color:var(--ink); border:1px solid var(--edge);
+      border-radius:6px; padding:5px 7px; font:inherit; font-size:12px; }
+    #status { margin-top:12px; font-size:12px; color:var(--dim); line-height:1.45; white-space:pre-wrap; min-height:18px; }
+    #status.err { color:#ff8f8f; }
+    #status.ok { color:var(--astral); }
+    #hint { position:fixed; bottom:14px; left:16px; z-index:3; font-size:11px; color:var(--dim); }
+    #hint b { color:var(--astral); }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="panel">
+    <h1>WOOM <b>MAP</b> — free geodata ingest</h1>
+    <p class="sub">OpenStreetMap only (Nominatim geocode + Overpass footprints). No Google, no API key, no billing. Type a place; we pull the real buildings and plop <b>your room</b> on the one at the center.</p>
+    <input id="q" placeholder="an address or place — e.g. Pioneer Courthouse Square, Portland" />
+    <div class="row">
+      <label class="radius">radius <select id="radius">
+        <option value="180">180 m</option>
+        <option value="300" selected>300 m</option>
+        <option value="500">500 m</option>
+      </select></label>
+      <button id="build">Build my block →</button>
+    </div>
+    <div id="status"></div>
+  </div>
+  <div id="hint">drag to orbit · scroll to zoom · <b>your room</b> = the glowing marker</div>
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>agent-rts — TSL surface-system test (Phase 6c)</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0a0d13; overflow: hidden; }
+      #c { display: block; }
+      #legend {
+        position: fixed; top: 12px; left: 0; right: 0; text-align: center;
+        font: 600 14px/1.3 ui-monospace, monospace;
+        color: #e9d8a6; text-shadow: 0 1px 3px #000; pointer-events: none;
+      }
+      #hint {
+        position: fixed; bottom: 10px; left: 0; right: 0; text-align: center;
+        font: 500 12px/1.3 ui-monospace, monospace;
+        color: #8fae5d; text-shadow: 0 1px 3px #000; pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <div id="legend">TSL SURFACE-SYSTEM TEST — directed features as node graphs: belt · chest · mottle (backend: …)</div>
+    <div id="hint">kenney = FORM (geometry/palette) · TSL = SURFACE (positional masks + noise) · WebGPURenderer w/ WebGL2 fallback · deterministic</div>
+    <script type="module" src="./src/tsltest.ts"></script>
+  </body>
+</html>

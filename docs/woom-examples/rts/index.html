@@ -1,0 +1,543 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>OVERSEER</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #0c1210; overflow: hidden; }
+      /* CSS owns layout size; the renderer owns the drawing-buffer size
+         (CSS px × devicePixelRatio). Never size the buffer from here. */
+      canvas { display: block; width: 100vw; height: 100vh; }
+      .plate {
+        position: fixed;
+        font: 12px ui-monospace, "SF Mono", Menlo, monospace;
+        color: #d0e8d0;
+        background: rgba(0, 0, 0, 0.55);
+        padding: 6px 10px;
+        border-radius: 4px;
+        pointer-events: none;
+        white-space: pre;
+      }
+      #hud-session { top: 10px; left: 12px; }
+      #hud-economy { top: 10px; right: 12px; }
+      /* HOVER-TOOLTIP — a floating info panel that follows the cursor over any
+         object (unit / territory / graph object / file). Matches the HUD plate
+         vocabulary (mono, dark plate, green text); positioned per-frame by JS. */
+      #hover-tip {
+        position: fixed;
+        z-index: 7;
+        pointer-events: none;
+        max-width: 260px;
+        background: rgba(6, 12, 10, 0.82);
+        border: 1px solid rgba(157, 187, 119, 0.4);
+        border-radius: 6px;
+        padding: 6px 9px;
+        font: 12px ui-monospace, "SF Mono", Menlo, monospace;
+        color: #d0e8d0;
+        white-space: normal;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      }
+      #hover-tip[hidden] { display: none; }
+      #hover-tip .ht-name { font-weight: bold; color: #ffd24d; }
+      #hover-tip .ht-kind { color: #9dbb77; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+      #hover-tip .ht-desc { color: #b8c4b8; margin-top: 2px; }
+      /* C9 onion breadcrumb — clickable ancestor path of the current view root. */
+      #breadcrumb { top: 38px; left: 12px; display: flex; gap: 0; align-items: center; pointer-events: none; }
+      #breadcrumb:empty { display: none; }
+      #breadcrumb .seg { pointer-events: auto; cursor: pointer; color: #9dbb77; }
+      #breadcrumb .seg:hover { color: #ffd24d; text-decoration: underline; }
+      #breadcrumb .sep { color: #5a6a52; padding: 0 4px; }
+      #hud-ticker {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        pointer-events: none;
+      }
+      .tick-line {
+        font: 12px ui-monospace, "SF Mono", Menlo, monospace;
+        color: #cfe8cf;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 4px 8px;
+        border-radius: 3px;
+        animation: tickfade 9s forwards;
+      }
+      @keyframes tickfade {
+        0% { opacity: 0; transform: translateY(6px); }
+        6% { opacity: 1; transform: translateY(0); }
+        75% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+      #hud-hint { bottom: 12px; right: 240px; opacity: 0.75; }
+      #menu-btn {
+        position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.55); border: 1px solid rgba(157,187,119,0.4);
+        border-radius: 4px; color: #d0e8d0; font: 16px ui-monospace, Menlo, monospace;
+        width: 34px; height: 28px; cursor: pointer; z-index: 6;
+      }
+      #menu-btn:hover { background: rgba(157,187,119,0.3); }
+      #command-card {
+        position: fixed;
+        left: 50%;
+        bottom: 14px;
+        transform: translateX(-50%);
+        min-width: 420px;
+        background: rgba(6, 12, 10, 0.82);
+        border: 1px solid rgba(157, 187, 119, 0.4);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font: 12px ui-monospace, "SF Mono", Menlo, monospace;
+        color: #d0e8d0;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      #card-name { font-weight: bold; font-size: 14px; color: #ffd24d; }
+      #card-loadout { color: #9ec49e; }
+      #card-mission { color: #ffd24d; }
+      /* Resource bars (the ResourceProvider seam — MockResource by default). */
+      #card-resources { display: flex; flex-direction: column; gap: 3px; }
+      #card-resources:empty { display: none; }
+      .res-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #b8c4b8; }
+      .res-name { width: 54px; }
+      .res-track { flex: 1; height: 7px; background: rgba(0,0,0,0.45); border-radius: 3px; overflow: hidden; }
+      .res-fill { display: block; height: 100%; }
+      .res-val { width: 62px; text-align: right; color: #9ec49e; }
+      .res-count { font-size: 11px; color: #b8c4b8; }
+      .card-row { display: flex; gap: 6px; margin-top: 2px; }
+      #card-input {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(157, 187, 119, 0.35);
+        border-radius: 3px;
+        color: #e8f4e8;
+        font: 12px ui-monospace, Menlo, monospace;
+        padding: 5px 8px;
+      }
+      #command-card button {
+        background: rgba(157, 187, 119, 0.18);
+        border: 1px solid rgba(157, 187, 119, 0.5);
+        border-radius: 3px;
+        color: #d0e8d0;
+        font: bold 11px ui-monospace, Menlo, monospace;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      #command-card button:hover { background: rgba(157, 187, 119, 0.35); }
+      /* Same id-specificity trap as #pause-menu below: the id rule above
+         (display:flex) outranks the UA [hidden] rule, so the `hidden`
+         attribute alone doesn't hide it. Found live 2026-07-04: the card
+         rendered empty (dashes) on a virgin page load with nothing
+         selected, even though card.hidden read true in the DOM. */
+      #command-card[hidden] { display: none; }
+      #minimap {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        width: 220px;
+        height: 220px;
+        border-radius: 6px;
+        border: 1px solid rgba(157, 187, 119, 0.4);
+        cursor: pointer;
+      }
+      #pause-menu {
+        position: fixed;
+        inset: 0;
+        background: rgba(6, 12, 10, 0.82);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        z-index: 10;
+      }
+      /* The id rule above (display:flex) outranks the UA [hidden] rule, so
+         the `hidden` attribute alone can't hide the menu — this override
+         (id+attr specificity) makes hidden actually hide it. */
+      #pause-menu[hidden] { display: none; }
+      #pause-title { font: bold 46px ui-monospace, Menlo, monospace; color: #ffd24d; letter-spacing: 3px; }
+      #pause-sub { font: 15px ui-monospace, Menlo, monospace; color: #9ec49e; margin-bottom: 18px; }
+      #pause-menu button {
+        width: 280px;
+        background: rgba(157, 187, 119, 0.18);
+        border: 1px solid rgba(157, 187, 119, 0.5);
+        border-radius: 4px;
+        color: #e8f4e8;
+        font: bold 14px ui-monospace, Menlo, monospace;
+        padding: 12px;
+        cursor: pointer;
+      }
+      #pause-menu button:hover { background: rgba(157, 187, 119, 0.35); }
+      #pause-about { max-width: 420px; text-align: center; color: #b8c4b8; font: 12px ui-monospace, Menlo, monospace; line-height: 1.5; margin-top: 18px; }
+      /* Quest tracker (wow mode) — the classic right-rail questline plate. */
+      #quest-tracker {
+        position: fixed; top: 44px; right: 12px; max-width: 280px;
+        background: rgba(6, 12, 10, 0.78);
+        border: 1px solid rgba(255, 210, 77, 0.35); border-radius: 6px;
+        padding: 8px 10px; font: 11px ui-monospace, Menlo, monospace;
+        color: #d0e8d0; pointer-events: none; z-index: 6;
+      }
+      #quest-tracker[hidden] { display: none; }
+      #quest-tracker .qt-title { font-weight: bold; color: #ffd24d; font-size: 12px; margin-bottom: 4px; letter-spacing: 0.5px; }
+      #quest-tracker .qt-step { margin: 2px 0; color: #9ec49e; }
+      #quest-tracker .qt-step.done { color: #57e389; }
+      #quest-tracker .qt-step.current { color: #ffd24d; }
+      #quest-tracker .qt-step.locked { color: #5a6a52; }
+      #quest-tracker .qt-hint { color: #b8c4b8; font-size: 10px; margin: 1px 0 4px 14px; white-space: normal; }
+      /* GOD MODE (§1b item 19) — the astral right-rail: your world-systems,
+         graded live from the god feeder's /god/astral. Same plate family as
+         #quest-tracker (right-rail, stacks below it when both are present). */
+      #god-panel {
+        position: fixed; top: 44px; right: 12px; max-width: 280px;
+        background: rgba(6, 12, 10, 0.78);
+        border: 1px solid rgba(143, 180, 255, 0.4); border-radius: 6px;
+        padding: 8px 10px; font: 11px ui-monospace, Menlo, monospace;
+        color: #d0e8d0; z-index: 6;
+      }
+      #god-panel[hidden] { display: none; }
+      #god-panel .gp-title { font-weight: bold; color: #8fb4ff; font-size: 12px; margin-bottom: 6px; letter-spacing: 0.5px; }
+      .gp-spec { margin: 4px 0; padding: 5px 6px; border-radius: 4px; background: rgba(255,255,255,0.04); }
+      .gp-spec .gp-name { font-weight: bold; cursor: pointer; }
+      .gp-spec .gp-name:hover { text-decoration: underline; }
+      .gp-spec .gp-meta { color: #9ec49e; font-size: 10px; }
+      .gp-spec.sanctuary .gp-name { color: #57e389; }
+      .gp-spec.wasteland .gp-name { color: #ff5d5d; }
+      .gp-spec.astral .gp-name { color: #9aa8b8; }
+      .gp-spec button {
+        margin-top: 3px; background: rgba(143, 180, 255, 0.18); border: 1px solid rgba(143, 180, 255, 0.5);
+        border-radius: 3px; color: #d0e8d0; font: bold 10px ui-monospace, Menlo, monospace; padding: 3px 8px; cursor: pointer;
+      }
+      .gp-spec button:hover { background: rgba(143, 180, 255, 0.35); }
+      .gp-spec button:disabled { opacity: 0.4; cursor: default; }
+      /* §1b item 24 — the LOOT panel (standing decision offers) + the DECODE
+         ENCOUNTER panel (the conversation whose phases are the mob's HP).
+         Same plate family as #quest-tracker; loot sits bottom-right,
+         clickable (offers ARE decisions). */
+      #loot-panel {
+        position: fixed; right: 12px; bottom: 96px; max-width: 280px; max-height: 30vh; overflow-y: auto;
+        background: rgba(6, 12, 10, 0.82);
+        border: 1px solid rgba(224, 165, 58, 0.45); border-radius: 6px;
+        padding: 8px 10px; font: 11px ui-monospace, Menlo, monospace;
+        color: #d0e8d0; z-index: 6;
+      }
+      #loot-panel[hidden] { display: none; }
+      #loot-panel .lp-title { font-weight: bold; color: #e0a53a; font-size: 12px; margin-bottom: 4px; letter-spacing: 0.5px; }
+      .lp-offer { margin: 3px 0; padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,0.04); cursor: pointer; }
+      .lp-offer:hover { background: rgba(224, 165, 58, 0.22); }
+      .lp-enc { margin: 3px 0; padding: 4px 6px; border-radius: 4px; background: rgba(79,191,208,0.10); cursor: pointer; color: #4fbfd0; }
+      /* item 27/29 — THE PARTY panel (roster + who you're embodied as).
+         Same plate family as #quest-tracker/#loot-panel; sits left-rail so
+         it never collides with the loot/quest right-rail stack. */
+      #party-panel {
+        position: fixed; left: 12px; bottom: 96px; max-width: 240px; max-height: 30vh; overflow-y: auto;
+        background: rgba(6, 12, 10, 0.82);
+        border: 1px solid rgba(127, 232, 255, 0.45); border-radius: 6px;
+        padding: 8px 10px; font: 11px ui-monospace, Menlo, monospace;
+        color: #d0e8d0; z-index: 6;
+      }
+      #party-panel[hidden] { display: none; }
+      #party-panel .pp-title { font-weight: bold; color: #7fe8ff; font-size: 12px; margin-bottom: 4px; letter-spacing: 0.5px; }
+      .pp-member { margin: 3px 0; padding: 4px 6px; border-radius: 4px; background: rgba(127,232,255,0.08); cursor: pointer; display: flex; justify-content: space-between; }
+      .pp-member:hover { background: rgba(127,232,255,0.22); }
+      .pp-member.pp-embodied { color: #ffd24d; background: rgba(255,210,77,0.14); }
+      .pp-embodied-tag { color: #ffd24d; font-size: 10px; }
+      #enc-panel {
+        position: fixed; right: 12px; top: 44px; width: 360px; max-height: 72vh; display: flex; flex-direction: column;
+        background: rgba(6, 12, 10, 0.92);
+        border: 1px solid rgba(79, 191, 208, 0.5); border-radius: 6px;
+        padding: 10px; font: 11px ui-monospace, Menlo, monospace; color: #d0e8d0; z-index: 13;
+      }
+      #enc-panel[hidden] { display: none; }
+      #enc-panel .ep-title { font-weight: bold; color: #4fbfd0; font-size: 12px; letter-spacing: 0.5px; }
+      #enc-panel .ep-phases { margin: 6px 0; color: #9ec49e; }
+      #enc-panel .ep-phases .done { color: #57e389; }
+      #enc-transcript { flex: 1; overflow-y: auto; margin: 6px 0; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 6px; }
+      #enc-transcript .t-player { color: #ffd24d; margin: 3px 0; white-space: pre-wrap; }
+      #enc-transcript .t-agent { color: #d0e8d0; margin: 3px 0; white-space: pre-wrap; }
+      #enc-transcript .t-gate { color: #ff8d6d; margin: 3px 0; white-space: pre-wrap; }
+      #enc-panel input {
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(79,191,208,0.4); border-radius: 3px;
+        color: #e8f4e8; font: 11px ui-monospace, Menlo, monospace; padding: 5px 7px; width: 100%;
+      }
+      #enc-panel .ep-row { display: flex; gap: 6px; margin-top: 6px; }
+      #enc-panel button {
+        background: rgba(79,191,208,0.18); border: 1px solid rgba(79,191,208,0.5); border-radius: 3px;
+        color: #d0e8d0; font: bold 10px ui-monospace, Menlo, monospace; padding: 4px 8px; cursor: pointer;
+      }
+      #enc-panel button:hover { background: rgba(79,191,208,0.35); }
+      /* SOS alert banner — top-center, pulsing red while any unit is blocked. */
+      #hud-alert {
+        position: fixed;
+        top: 44px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(60, 10, 6, 0.9);
+        border: 1px solid rgba(255, 90, 60, 0.7);
+        border-radius: 4px;
+        padding: 5px 14px;
+        color: #ffb0a0;
+        font: bold 13px ui-monospace, Menlo, monospace;
+        letter-spacing: 0.5px;
+        pointer-events: none;
+        z-index: 7;
+        animation: sospulse 1s ease-in-out infinite;
+      }
+      @keyframes sospulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 0 rgba(255, 60, 40, 0); }
+        50% { opacity: 0.72; box-shadow: 0 0 14px rgba(255, 60, 40, 0.6); }
+      }
+      /* §1b item 4 — unit context menu (right-click a unit). */
+      #ctx-menu {
+        position: fixed;
+        z-index: 12;
+        display: flex;
+        flex-direction: column;
+        background: rgba(6, 12, 10, 0.92);
+        border: 1px solid rgba(255, 210, 77, 0.5);
+        border-radius: 5px;
+        overflow: hidden;
+        min-width: 150px;
+      }
+      #ctx-menu[hidden] { display: none; }
+      #ctx-menu .ctx-title { color: #ffd24d; font: bold 12px ui-monospace, Menlo, monospace; padding: 6px 12px 4px; }
+      #ctx-menu button {
+        background: none; border: none; text-align: left; cursor: pointer;
+        color: #d0e8d0; font: 12px ui-monospace, Menlo, monospace; padding: 7px 12px;
+      }
+      #ctx-menu button:hover { background: rgba(255, 210, 77, 0.18); color: #ffd24d; }
+      /* §1b item 6 — chat bar (talk to an agent; the CaveActor send path). */
+      #chat-bar {
+        position: fixed;
+        left: 50%;
+        bottom: 110px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(6, 12, 10, 0.88);
+        border: 1px solid rgba(255, 210, 77, 0.5);
+        border-radius: 5px;
+        padding: 8px 12px;
+        z-index: 11;
+        font: 12px ui-monospace, Menlo, monospace;
+      }
+      #chat-bar[hidden] { display: none; }
+      #chat-to { color: #ffd24d; font-weight: bold; white-space: nowrap; }
+      #chat-input {
+        width: 380px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(157, 187, 119, 0.35);
+        border-radius: 3px;
+        color: #e8f4e8;
+        font: 12px ui-monospace, Menlo, monospace;
+        padding: 6px 8px;
+      }
+      /* Transient toast (range gate, sheet-without-host, …). */
+      #toast {
+        position: fixed;
+        top: 78px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(6, 12, 10, 0.88);
+        border: 1px solid rgba(157, 187, 119, 0.5);
+        border-radius: 4px;
+        padding: 6px 14px;
+        color: #d0e8d0;
+        font: 12px ui-monospace, Menlo, monospace;
+        z-index: 12;
+        pointer-events: none;
+      }
+      #toast[hidden] { display: none; }
+
+      /* ═══════════════════════════════════════════════════════════════════
+         MINTED UI CHROME — sci-fi WoW HUD kit wired from the minted texture
+         banks (examples/rts/assets/texbank/multipanel2 + multipanel3).
+         Tasteful WoW-vanilla register: dark-metal panels, glowing button
+         frames, framed bars. Re-skins EXISTING DOM only — no new panels, no
+         gameplay change. This block comes last so its (equal-specificity)
+         rules layer the chrome on top of the base HUD styles above.
+         Tile→role map:
+           r45c13 = dark-metal fill  (panels/plates/bars/minimap frame)
+           r31c14 = metal fill        (roster rows)
+           r20c8  = blue button frame (idle)     → border-image, center discarded
+           r19c5  = cyan glow frame   (hover/selected)
+           r19c7  = red button frame  (danger / DISMISS)
+         All tiles are opaque crops from the kit; buttons use border-image with
+         the center slice discarded so only the rounded metal bezel is drawn.
+         ═══════════════════════════════════════════════════════════════════ */
+      :root {
+        --ui-metal:    url('assets/texbank/multipanel3/multipanel3_r45c13.png');
+        --ui-metal2:   url('assets/texbank/multipanel2/multipanel2_r31c14.png');
+        --ui-btn-idle: url('assets/texbank/multipanel3/multipanel3_r20c8.png');
+        --ui-btn-glow: url('assets/texbank/multipanel3/multipanel3_r19c5.png');
+        --ui-btn-dngr: url('assets/texbank/multipanel3/multipanel3_r19c7.png');
+      }
+      /* 1 · TOP STATUS BAR + HINT BAR — the .plate family gets a dark-metal
+            face inside a thin chrome frame (session ⌂, economy ☺✎⚠, hint). */
+      .plate {
+        background:
+          linear-gradient(rgba(6, 12, 10, 0.72), rgba(4, 9, 7, 0.82)),
+          var(--ui-metal);
+        background-size: cover, 150px 150px;
+        border: 1px solid rgba(157, 187, 119, 0.4);
+        border-radius: 5px;
+        box-shadow:
+          inset 0 1px 0 rgba(157, 187, 119, 0.14),
+          inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+          0 2px 9px rgba(0, 0, 0, 0.45);
+      }
+      #breadcrumb.plate { background: none; border: none; box-shadow: none; } /* keep the breadcrumb bare */
+      /* 2 · MINIMAP — a beveled dark-metal frame via border-image of the
+            metal fill (the canvas draws inside; the border carries the chrome). */
+      #minimap {
+        border: 9px solid transparent;
+        border-image: var(--ui-metal) 20 stretch;
+        box-shadow:
+          0 0 0 1px rgba(157, 187, 119, 0.45),
+          0 0 12px rgba(0, 0, 0, 0.55);
+      }
+      /* 3 · COMMAND CARD + standing panels — dark-metal face, chrome frame. */
+      #command-card {
+        background:
+          linear-gradient(rgba(6, 12, 10, 0.86), rgba(3, 8, 6, 0.92)),
+          var(--ui-metal);
+        background-size: cover, 170px 170px;
+        border: 1px solid rgba(157, 187, 119, 0.5);
+        box-shadow:
+          inset 0 1px 0 rgba(157, 187, 119, 0.16),
+          0 5px 20px rgba(0, 0, 0, 0.6);
+      }
+      #quest-tracker, #god-panel, #loot-panel, #party-panel, #enc-panel {
+        background-image: var(--ui-metal);
+        background-size: 150px 150px;
+        background-blend-mode: normal;
+      }
+      /* 3a · BUTTONS — rounded metal bezel from the button kit (border-image,
+            center discarded); hover swaps to the cyan glow frame; the DISMISS
+            / danger control gets the red frame. Command card + pause menu +
+            the ☰ menu button all share the kit. */
+      #command-card button, #pause-menu button, #menu-btn {
+        border-style: solid;
+        border-width: 8px 12px;
+        border-image: var(--ui-btn-idle) 15 20 stretch;
+        border-radius: 0;
+        background: rgba(9, 24, 32, 0.55);
+        color: #e2f2ff;
+        text-shadow: 0 0 5px rgba(90, 190, 255, 0.5);
+      }
+      #command-card button:hover, #pause-menu button:hover, #menu-btn:hover {
+        border-image: var(--ui-btn-glow) 15 20 stretch;
+        background: rgba(20, 62, 82, 0.6);
+        color: #ffffff;
+      }
+      /* out-specify `#command-card button` (id+type) so DISMISS gets the red frame */
+      #command-card #card-dismiss, #command-card #card-dismiss:hover {
+        border-image: var(--ui-btn-dngr) 15 20 stretch;
+        background: rgba(40, 12, 10, 0.55);
+        color: #ffdad2;
+        text-shadow: 0 0 5px rgba(255, 90, 60, 0.5);
+      }
+      #menu-btn { border-width: 6px 9px; }
+      /* 4 · RESOURCE / HP BARS — dark-metal channel (track) + glossy sheen on
+            the fill. The fill keeps its inline hsl() colour (energy/HP hue);
+            we only add a bezel to the track and a highlight to the fill. */
+      .res-track {
+        background:
+          linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.3)),
+          var(--ui-metal);
+        background-size: cover, 60px 60px;
+        border: 1px solid rgba(0, 0, 0, 0.7);
+        box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.85);
+        height: 9px;
+      }
+      .res-fill {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.5),
+          inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+        border-radius: 2px;
+      }
+      /* 5 · ROSTER ROWS — the party members get a COMMON (grey-metal) frame:
+            a metal face + a neutral rarity accent on the left edge. Higher
+            rarities would swap the accent colour; COMMON is the default. */
+      .pp-member {
+        background:
+          linear-gradient(rgba(6, 12, 10, 0.62), rgba(6, 12, 10, 0.72)),
+          var(--ui-metal2);
+        background-size: cover, 90px 90px;
+        border: 1px solid rgba(120, 140, 120, 0.35);
+        border-left: 3px solid rgba(170, 178, 158, 0.65);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud-session" class="plate">OVERSEER · connecting…</div>
+    <div id="hud-economy" class="plate">⌂ 0  ☺ 0  ✎ 0  ⚠ 0</div>
+    <div id="breadcrumb" class="plate"></div>
+    <button id="menu-btn" title="Menu">☰</button>
+    <div id="hud-ticker"></div>
+    <div id="hud-alert" hidden>⚠ BLOCKED</div>
+    <div id="quest-tracker" hidden></div>
+    <div id="god-panel" hidden><div class="gp-title">⟟ YOUR WORLD-SYSTEMS</div><div id="god-list"></div></div>
+    <div id="loot-panel" hidden><div class="lp-title">◈ LOOT — decision offers</div><div id="loot-list"></div></div>
+    <div id="party-panel" hidden><div class="pp-title">⚑ PARTY — <span id="party-embodied-label">you</span></div><div id="party-list"></div></div>
+    <div id="enc-panel" hidden>
+      <div class="ep-title" id="enc-title">DECODE ENCOUNTER</div>
+      <div class="ep-phases" id="enc-phases"></div>
+      <div id="enc-transcript"></div>
+      <input id="enc-input" placeholder="Speak to your agent… (Enter sends · Esc closes)" />
+      <div class="ep-row">
+        <button id="enc-check">CHECK GATE</button>
+        <button id="enc-rederive">RE-DERIVED ✓</button>
+        <button id="enc-bundle">BUNDLE</button>
+        <button id="enc-close">CLOSE</button>
+      </div>
+    </div>
+    <div id="toast" hidden></div>
+    <div id="hover-tip" hidden>
+      <div class="ht-name"></div>
+      <div class="ht-kind"></div>
+      <div class="ht-desc"></div>
+    </div>
+    <div id="ctx-menu" hidden>
+      <div class="ctx-title" id="ctx-title">—</div>
+      <button id="ctx-chat">💬 CHAT</button>
+      <button id="ctx-task">⚑ ASSIGN TASK</button>
+      <button id="ctx-sheet">📜 SHEET</button>
+      <button id="ctx-recruit">⚑ RECRUIT TO PARTY</button>
+      <button id="ctx-embody">⇄ EMBODY (seize)</button>
+      <button id="ctx-target">◎ TARGET → PROMPT</button>
+    </div>
+    <div id="chat-bar" hidden>
+      <span id="chat-to">—</span>
+      <input id="chat-input" type="text" placeholder="Say something… (Esc closes)" />
+    </div>
+    <div id="hud-hint" class="plate">drag pan · wheel zoom · shift-drag select · click unit · right-click unit ▸ menu / ground ▸ move · dbl-click ⟳ enter · C camera · G god · WASD walk · Enter chat · Esc back</div>
+    <canvas id="minimap"></canvas>
+    <div id="pause-menu" hidden>
+      <div id="pause-title">OVERSEER</div>
+      <div id="pause-sub">your agents, live</div>
+      <button id="pause-resume">RESUME</button>
+      <button id="pause-recenter">RECENTER (Home)</button>
+      <button id="pause-mute">SOUND: ON</button>
+      <button id="pause-restart">RESTART WORLD (log-replay)</button>
+      <div id="pause-about">Directories are territories. Agents are units. The things they make in the graph appear as machines and monuments. Drag to pan, wheel to zoom, click a unit to command it.</div>
+    </div>
+    <div id="command-card" hidden>
+      <div id="card-name">—</div>
+      <div id="card-status">—</div>
+      <div id="card-loadout"></div>
+      <div id="card-resources"></div>
+      <div id="card-mission">no mission — type one below</div>
+      <div class="card-row">
+        <input id="card-input" type="text" placeholder="Type a mission and press Enter" />
+        <button id="card-send">MISSION</button>
+        <button id="card-dismiss">DISMISS</button>
+      </div>
+    </div>
+    <canvas id="world" width="1920" height="1080"></canvas>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
