@@ -22,8 +22,19 @@ Thumbs.db
 *.local.md
 *.local.json
 
+# Secrets + live per-instance config — NEVER commit filled values.
+# The *.example.json templates ARE committed (they carry the shape, empty).
+.secrets/mcp_state.json
+config.json
+!config.example.json
+!.secrets/mcp_state.example.json
+
 # Compiled jobworlds (created at runtime)
 *-jobworld/
 
 # Exception: instantiate-jobworld skill (not a compiled jobworld)
 !skills/instantiate-jobworld/
+
+# Python bytecode
+__pycache__/
+*.pyc

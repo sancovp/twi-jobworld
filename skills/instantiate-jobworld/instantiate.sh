@@ -1,11 +1,13 @@
 #!/bin/bash
-# Instantiate a new TWI Jobworld company
+# Instantiate a corrected TWI Jobworld instance — THE PATTERN way.
+# The instance is COMPILED from its config.json by server/render.py (no hardcoded departments).
 # Usage: ./instantiate.sh /full/path/to/instance "Company Name" [port]
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/template/twi-jobworld-template"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"   # skills/instantiate-jobworld -> repo root
 
 if [ -z "$1" ] || [ -z "$2" ]; then
     echo "Usage: $0 /full/path/to/instance \"Company Name\" [port]"
@@ -35,77 +37,49 @@ fi
 echo "Creating $COMPANY_NAME at $TARGET_DIR (port $PORT)..."
 
 mkdir -p "$TARGET_DIR"
-cp -r "$TEMPLATE_DIR/"* "$TARGET_DIR/"
+cp -r "$TEMPLATE_DIR/"* "$TARGET_DIR/" 2>/dev/null || true
 
-cat > "$TARGET_DIR/CLAUDE.md" << CEOEOF
-# CEO — $COMPANY_NAME
+# Seed the ONE config from the example, stamping in the company name. The frontend config panel
+# edits this file (and .secrets) later; on save the server re-renders. Departments/agents/CEO
+# prompt/MCPs are all COMPILED from here — never hardcoded in this script.
+python3 - "$REPO_ROOT/config.example.json" "$TARGET_DIR/config.json" "$COMPANY_NAME" <<'PY'
+import json, sys
+src, dst, name = sys.argv[1], sys.argv[2], sys.argv[3]
+cfg = json.load(open(src))
+cfg.setdefault("company", {})["name"] = name
+json.dump(cfg, open(dst, "w"), indent=2)
+PY
 
-You are the CEO of $COMPANY_NAME. You run the company.
+# Seed secrets (empty) — the frontend fills the keys; agents never see this dir.
+mkdir -p "$TARGET_DIR/.secrets"
+cp "$REPO_ROOT/.secrets/mcp_state.example.json" "$TARGET_DIR/.secrets/mcp_state.json"
 
-## Company Context
-- **Name:** $COMPANY_NAME
-- **Server:** http://localhost:$PORT
-- **Port:** $PORT
-- **Working Directory:** $TARGET_DIR
-
-## Your Job
-
-1. **Initialize the company** — create departments via POST /api/departments
-2. **Register agents** — register Content Lead, Growth Lead, Revenue Lead, Researcher, SWE Engineer
-3. **Set up recurring cadences** — each agent has weekly/monthly rhythms
-4. **Monitor and coordinate** — check in on agent progress
-
-## Departments to Create
-
-| Dept | Purpose |
-|------|---------|
-| content | Newsletter creation, content strategy |
-| growth | Subscriber acquisition, outreach |
-| revenue | Monetization, tier management |
-| research | Industry intelligence, competitor analysis |
-| engineering | Automation, integrations, tooling |
-
-## Agent Registration
-
-After creating departments, register each agent via POST /api/agents:
-- name: agent name
-- dept_id: department ID from creation
-- agent_file_path: path to their .md file
-
-## Skills Available
-
-- jobworld-api: interact with the company API
-- understand-agents, understand-hooks, understand-mcps, understand-skills
-
-## Operating Contract
-
-- Report blockers with specific missing inputs
-- Use supposedly_done only when company is fully initialized
-- Each agent handles its own domain — your job is coordination, not execution
-CEOEOF
+# COMPILE the instance from its config (CLAUDE.md, agents/CEO.md, .claude/agents/*, .claude/rules/*,
+# skills/run-dept-*/SKILL.md, .mcp.json). THIS replaces the old hardcoded 5-department heredoc.
+echo "Rendering instance from config..."
+python3 "$REPO_ROOT/server/render.py" "$TARGET_DIR"
 
 mkdir -p "$TARGET_DIR/event-stream"
-echo '{}' > "$TARGET_DIR/event-stream/data.json"
-echo '' > "$TARGET_DIR/event-stream/events.jsonl"
+[ -f "$TARGET_DIR/event-stream/data.json" ] || echo '{}' > "$TARGET_DIR/event-stream/data.json"
+[ -f "$TARGET_DIR/event-stream/events.jsonl" ] || echo '' > "$TARGET_DIR/event-stream/events.jsonl"
 
-# Install dependencies
-cd "$TARGET_DIR/dist"
-npm install
-
+# Start the server (tmux/Anthropic runtime by default; config.runtime selects the CEO launcher).
 cd "$TARGET_DIR"
 export PORT
-chmod +x start.sh
-nohup ./start.sh > server.log 2>&1 &
-SERVER_PID=$!
-
-echo "Started server with PID $SERVER_PID"
-sleep 2
-
-if curl -s "http://localhost:$PORT/api/health" > /dev/null 2>&1; then
-    echo ""
-    echo "✓ $COMPANY_NAME is live at http://localhost:$PORT"
-    echo "✓ Working dir: $TARGET_DIR"
-    echo "✓ Server PID: $SERVER_PID"
+if [ -f start.sh ]; then
+    chmod +x start.sh
+    nohup ./start.sh > server.log 2>&1 &
+    SERVER_PID=$!
+    echo "Started server with PID $SERVER_PID"
+    sleep 2
+    if curl -s "http://localhost:$PORT/api/health" > /dev/null 2>&1; then
+        echo ""
+        echo "✓ $COMPANY_NAME is live at http://localhost:$PORT"
+        echo "✓ Working dir: $TARGET_DIR"
+        echo "✓ Edit config via the dashboard config panel, or config.json + re-render."
+    else
+        echo "Warning: Server may not be fully ready yet. Check $TARGET_DIR/server.log"
+    fi
 else
-    echo "Warning: Server may not be fully ready yet. Check $TARGET_DIR/server.log"
+    echo "✓ Instance compiled at $TARGET_DIR (no start.sh in template — run the server manually)."
 fi
