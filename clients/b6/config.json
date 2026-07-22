@@ -1,0 +1,121 @@
+{
+  "_README": "B6 Studios — the ONE config for this client (base + this file = the B6 instance). COMPILED by server/render.py. Corrected for the Instantly model: the sending identity (from-name, from-address, sending domains, warmup, tracked links) is set INSIDE the Instantly workspace, NOT here. Apollo sources leads; Instantly sends. Keys live in .secrets/mcp_state.json, provided at runtime. Unknowns are null and listed under _needs_from_client — never fabricated.",
+
+  "company": {
+    "name": "B6 Studios",
+    "mission": "Brands own a show, not an ad. B6 builds episodic branded series for TikTok, Reels, and Shorts — content people come back to watch.",
+    "context": "B6 builds shows for brands. Instead of one-off social posts that disappear, B6 creates episodic series (TikTok / Reels / Shorts) that audiences return to — brands stop interrupting audiences and start entertaining them. TWO MODELS: (1) Sponsor an existing creator series (creators who already have audience/engagement — Teddy Alvarez-Nissen / 7 Stories, Chewkz / Surviving the Cows) — a brand associates with proven content; used as LIVE PROOF. (2) Co-develop a custom branded series — the brand funds it, B6 produces it, the brand gets its own season. LEAD WITH MODEL 2; use model 1 as proof. TAM LOGIC: any consumer brand doing roughly $20M+ revenue can afford this and should be experimenting with episodic short-form, because that is where attention is moving. THE PITCH IS NOT 'buy an ad' — IT IS 'own a show.' This general engine sells the wide net (model 2); it is separate from Avi's manual sniper pipelines.",
+    "scope_rules": "GENERAL outreach only — the wide net. HARD GUARDRAILS: (1) NEVER touch Surviving the Cows, Trashed, or 7 Stories named targets — those are Avi's manual sniper pipelines; dedupe against the dedupe/ lists before every send. (2) NEVER send from b6studios.com or mason@b6studios.com — sending is via the Instantly SDR cold-domain account (the from-identity is configured IN Instantly). (3) Match the ask to seniority: director level and above; never aim a six-figure 'own a show' concept at a coordinator. (4) No invented facts, no fabricated revenue figures or stats — use only approved numbers. (5) A brand with no real social presence cannot be a good fit regardless of other signals (active-in-social is B6's explicit near-gate)."
+  },
+
+  "runtime": "tmux-anthropic",
+
+  "departments": [
+    {
+      "name": "lead_gen",
+      "purpose": "Source and qualify ICP-matched consumer brands via Apollo; turn the raw count into a qualified TAM using the B6 rubric.",
+      "mcps": ["apollo"],
+      "agents": [
+        {
+          "name": "Lead Researcher",
+          "agentType": "general-purpose",
+          "capabilities": ["apollo-search", "icp-scoring", "dedupe", "market-sizing"],
+          "config": {
+            "targeting": {
+              "titles": ["CMO", "Chief Marketing Officer", "VP Marketing", "VP Brand", "Head of Brand", "Head of Content", "Head of Social", "Director of Brand Marketing", "Growth Lead"],
+              "seniorities": ["director", "vp", "c_suite"],
+              "email_statuses": ["verified", "likely to engage"],
+              "notes": "Consumer-facing brands ~$20M+ revenue that already make content or obviously should, with a product/world a short-form series could be built around. Never aim a six-figure concept at a coordinator."
+            },
+            "cube": {
+              "employee_ranges": ["51,200", "201,500", "501,1000", "1001,5000", "5001,10000"],
+              "industries": ["food & beverage", "apparel", "beauty", "consumer goods", "retail"]
+            },
+            "market_crosscheck": {
+              "naics": ["311", "312", "315", "3254", "448"],
+              "empszes": "001",
+              "geo": "us",
+              "note": "consumer-brand NAICS (food/beverage/apparel/toiletries/clothing-retail) as a STARTER ICP approximation — refine which NAICS truly match."
+            },
+            "icp_rubric": {
+              "instruction": "Score each pulled account 0-100 (ADDITIVE — never multiply). Output per account {tier, score, reason}. Calibrate against B6's actual closed-won when loaded; until then score the SPEC ICP and mark uncertainty honestly.",
+              "criteria": [
+                {"criterion": "Active in social (THE core near-gate)", "weight": 30, "earns": "posting regularly, multiple active accounts, real follower base, and especially creator/influencer/UGC partnerships (others organically promoting the brand — the single strongest 'active' signal)"},
+                {"criterion": "Consumer-facing brand", "weight": 25, "earns": "sells to consumers; a product/world a short-form series could be built around"},
+                {"criterion": "Decision-maker authority", "weight": 20, "earns": "contact is director+ in brand/marketing/content/social/growth"},
+                {"criterion": "Revenue ~$20M+", "weight": 15, "earns": "can afford a sponsored/co-developed season"},
+                {"criterion": "Brandable world / product fit", "weight": 10, "earns": "the product naturally lives inside an episodic format"}
+              ],
+              "tiers": {"A": "80-100", "B": "60-79", "C": "40-59", "D": "0-39", "note": "A/B = good fit (drive qualified-TAM rate). Active-in-social is a near-gate: no real social presence -> cap at C and flag."},
+              "anti_pitfalls": ["additive not multiplicative", "size counted once (revenue/headcount/'big' co-vary — one axis)", "missing data != poor fit (lean C, note the gap, never a confident 0)", "no invented facts", "the reason paragraph IS the audit trail"],
+              "out_of_scope": "anything on the dedupe/ lists (STC / Trashed / 7 Stories), the primary domain, B2B-only / non-consumer, or sub-director contacts aimed at a six-figure concept -> tier D / skip"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "outreach",
+      "purpose": "Run the cold campaign via Instantly (the SDR sending account). Personalized four-part sends that make a director+ brand marketer book a 15-minute call.",
+      "mcps": ["instantly"],
+      "agents": [
+        {
+          "name": "Outreach Operator",
+          "agentType": "general-purpose",
+          "capabilities": ["instantly-campaign", "copywriting", "hyper-personalization", "compliance"],
+          "config": {
+            "instantly_campaign_ref": null,
+            "goal": "Make a director-level-or-above brand marketer book a 15-minute call with Mason and Weston. The reader's reaction must be 'this is the most interesting inbound I have ever received.'",
+            "copy": {
+              "variants": ["text_only"],
+              "four_part_anatomy": [
+                "a. Real proof up top — a link to a real performing B6/creator episode (the video is the conversion tool; goes early, is real).",
+                "b. Brand-specific hook — one specific observational line about the brand's recent content/launch/campaign (not flattery), then a short scene placing THIS brand's actual product inside one of our show-worlds (reader does zero imaginative work = hyper-personalized).",
+                "c. (video variant only, later) AI mockup teaser framed honestly — 'we mocked this up to show the idea; our artists do the real production.' General lane only; never on a premium named target; never imply the brand was involved.",
+                "d. One low-friction CTA — 15 minutes with Mason and Weston, the calendar link, nothing else (no pricing/deck/attachments in touch one)."
+              ],
+              "hard_rules": [
+                "Body under 170 words; short and direct, no filler.",
+                "Custom subject line naming the brand; never generic.",
+                "No em dashes, no en dashes (periods/commas/plain hyphens only). No emojis.",
+                "No artificial urgency or fake deadlines; scarcity only if real (category exclusivity).",
+                "Use ONLY numbers that appear verbatim in approved assets; if not given a stat, use no stat.",
+                "First line of the body = the recipient's email address (QA copy/paste rule).",
+                "Signature/sender identity: SET IN INSTANTLY (the SDR sending account). Do NOT send from b6studios.com. The in-body sign-off + booking parties (Mason/Weston) are an open client decision — see _needs_from_client.sender_identity."
+              ],
+              "cadence": [
+                {"touch": 1, "day": 0, "purpose": "the four-part anatomy"},
+                {"touch": 2, "day": 3, "purpose": "proof the format works (approved examples + approved B6 numbers); re-link the page"},
+                {"touch": 3, "day": 7, "purpose": "budget reframe: you already spend on social; here is how it compounds into owned IP. First soft meeting ask."},
+                {"touch": 4, "day": 12, "purpose": "short breakup: 'Closing the loop on [Brand].' Door left open."}
+              ],
+              "subject_options": ["We built [Brand] a show", "[Brand], episode one", "What [Brand] looks like as a series", "A show concept for [Brand]", "[Brand] keeps posting. We made you a show instead."],
+              "brand_colors": "navy blue + chartreuse green (client-facing, when branding appears)"
+            },
+            "compliance": {
+              "postal_address": null,
+              "unsubscribe_url": null,
+              "note": "CAN-SPAM requires a real physical address + a working unsubscribe link. Confirm whether Instantly injects these or B6 supplies them; a live send is blocked until both are resolved."
+            }
+          }
+        }
+      ]
+    }
+  ],
+
+  "mcp_servers": {
+    "apollo":   { "type": "apollo",   "secret_ref": "apollo" },
+    "instantly":{ "type": "instantly","secret_ref": "instantly" }
+  },
+
+  "_needs_from_client": {
+    "instantly.INSTANTLY_API_KEY": "API key of the WARMED Instantly workspace (the SDR sending account — from-name, sending domains, warmup, tracked links are all configured in Instantly). Confirm: is there a warmed Instantly campaign (⇒ we need its api key + campaign_id), or is warmup on SMTP domains (⇒ different, longer path)?",
+    "outreach.instantly_campaign_ref": "the Instantly campaign id to load leads into / start.",
+    "apollo.APOLLO_API_KEY": "Apollo API key for lead search + qualification.",
+    "sender_identity": "the SDR sending persona (from-name/from-address in Instantly, NOT mason@b6studios.com) AND whether the body still signs off / books as Mason + Weston. This is B6/Avi's call — do not fabricate.",
+    "outreach.compliance.postal_address": "a real physical mailing address for the CAN-SPAM footer (or confirm Instantly injects it).",
+    "outreach.compliance.unsubscribe_url": "a working unsubscribe link (or confirm Instantly injects it).",
+    "booking_calendar_url": "the Mason + Weston 15-minute booking link for the CTA.",
+    "proof_assets": "the real performing B6/creator episode links + approved facts/numbers the copy may cite (nothing else may be cited)."
+  }
+}
