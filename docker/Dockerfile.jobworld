@@ -30,10 +30,15 @@ RUN useradd -m -s /bin/bash ceo && mkdir -p /agent /jobworld_data
 # Create directories
 RUN mkdir -p /agent/jobworld /agent/.claude/rules /agent/.claude/skills
 
-# Copy Jobworld server package + template + skills
+# Copy Jobworld server package + template + skills + the ONE config shape + client configs
 COPY server/ /agent/server/
 COPY template/ /agent/template/
 COPY skills/ /agent/skills/
+COPY config.example.json /agent/config.example.json
+COPY .secrets/mcp_state.example.json /agent/.secrets/mcp_state.example.json
+# clients/ holds per-client config.json (e.g. clients/b6/config.json); seeded by JOBWORLD_CLIENT.
+# The base ships an empty clients/ (README); client branches (e.g. b6) add clients/<name>/config.json.
+COPY clients/ /agent/clients/
 
 # Copy global sync script
 COPY sync_globals.sh /usr/local/bin/sync_globals.sh
