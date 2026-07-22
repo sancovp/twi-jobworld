@@ -81,7 +81,7 @@
                 "No artificial urgency or fake deadlines; scarcity only if real (category exclusivity).",
                 "Use ONLY numbers that appear verbatim in approved assets; if not given a stat, use no stat.",
                 "First line of the body = the recipient's email address (QA copy/paste rule).",
-                "Signature/sender identity: SET IN INSTANTLY (the SDR sending account). Do NOT send from b6studios.com. The in-body sign-off + booking parties (Mason/Weston) are an open client decision — see _needs_from_client.sender_identity."
+                "Sent from an AI-run SDR account (the from-name is the Instantly sending account; not a real person, not mason@b6studios.com). The SDR reaches out cold on behalf of the founders and asks the prospect to meet Mason + Weston. Sign off accordingly."
               ],
               "cadence": [
                 {"touch": 1, "day": 0, "purpose": "the four-part anatomy"},
@@ -95,7 +95,7 @@
             "compliance": {
               "postal_address": null,
               "unsubscribe_url": null,
-              "note": "CAN-SPAM requires a real physical address + a working unsubscribe link. Confirm whether Instantly injects these or B6 supplies them; a live send is blocked until both are resolved."
+              "note": "CAN-SPAM footer (physical address + unsubscribe) handled via Instantly."
             }
           }
         }
@@ -109,13 +109,8 @@
   },
 
   "_needs_from_client": {
-    "instantly.INSTANTLY_API_KEY": "API key of the WARMED Instantly workspace (the SDR sending account — from-name, sending domains, warmup, tracked links are all configured in Instantly). Confirm: is there a warmed Instantly campaign (⇒ we need its api key + campaign_id), or is warmup on SMTP domains (⇒ different, longer path)?",
+    "instantly.INSTANTLY_API_KEY": "API key of the warmed Instantly workspace (SDR sending accounts).",
     "outreach.instantly_campaign_ref": "the Instantly campaign id to load leads into / start.",
-    "apollo.APOLLO_API_KEY": "Apollo API key for lead search + qualification.",
-    "sender_identity": "the SDR sending persona (from-name/from-address in Instantly, NOT mason@b6studios.com) AND whether the body still signs off / books as Mason + Weston. This is B6/Avi's call — do not fabricate.",
-    "outreach.compliance.postal_address": "a real physical mailing address for the CAN-SPAM footer (or confirm Instantly injects it).",
-    "outreach.compliance.unsubscribe_url": "a working unsubscribe link (or confirm Instantly injects it).",
-    "booking_calendar_url": "the Mason + Weston 15-minute booking link for the CTA.",
-    "proof_assets": "the real performing B6/creator episode links + approved facts/numbers the copy may cite (nothing else may be cited)."
+    "apollo.APOLLO_API_KEY": "Apollo API key for lead search + qualification."
   }
 }
