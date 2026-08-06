@@ -1,9 +1,9 @@
-CEO heartbeat. Check your company status and take the next best action.
+Run the WORKDAY ROUND now: invoke the ceo-bootstrap skill and complete ALL its
+steps, in order — 0 roster gate (bootstrap missing departments instead of ever
+soloing), 1 read events, 2 review every supposedly_done task
+(curl {server}/api/tasks/supposedly-done → POST /api/ceo-review), 3 assign this
+round's tasks, 4 RUN the departments via the executor seam (JW_ROUND_EXECUTOR),
+5 verify every department reported, 6 emit the round record.
 
-1. Check for tasks pending your review: curl {server}/api/tasks/supposedly-done
-2. If any: review each one (complete or send back)
-3. Check open tasks: curl {server}/api/tasks/open
-4. If departments need work: read their run-dept skills and run a round
-5. Check the dashboard for overall status
-
-Keep the company moving. Every heartbeat = one decision cycle.
+Every heartbeat = one complete Workday round. A round may NOT end with you
+having done a department's work inline.
