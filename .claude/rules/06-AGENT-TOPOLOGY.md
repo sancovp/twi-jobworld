@@ -13,12 +13,26 @@ S3 APPLICATION    JW server + task/goal/event API + dashboards + terminal surfac
 
 S1 being blocked NEVER blocks testing S2+S3 — that is what the mock boundary is for.
 
+> **UPDATE 2026-08-06 — the round now has a CONTRACT + an executor SEAM (see `ceo-bootstrap` =
+> the Workday round; rule 08 TODO #9, superseded).** Every trigger (heartbeat · `/input` ·
+> `POST /api/run-round`, now all converging on `workday_round_prompt()`) runs the same round, which
+> is roster-GATED (STEP 0: empty roster → first boot, never soloing). "Run the departments" (STEP 4)
+> resolves via `JW_ROUND_EXECUTOR`: **native** = CC agent-teams `TeamCreate` — the dir-loadout model
+> below, a department's loadout being its `run-dept-{dept}` skill + `agents/<dept>.md`; **cave** =
+> `server/caveteams_round.py`, `run_team` over MiniMax-runtime dept AgentRefs (personas compiled from
+> the same files — NO claude-in-dir process, NO adapter). So the PASS assertions below ("a process
+> ran IN its dir; its transcript shows ITS skill") apply to **native**; **cave** verifies the same
+> topology through the STORE (dept observations → supposedly_done → review → complete → goal met) +
+> the event stream + the round record, since MiniMax workers leave no CC dir-transcript. The round
+> HARNESS is proven E2E both via the deterministic `--mock-workers` runtime and the store contract.
+
 ## The execution mechanism (the part that is NOT in the Python — do not go looking for it there)
 
 **The CEO is Claude Code. A DEPARTMENT IS A DIRECTORY. Running ANY agent process in a
 dir EQUIPS that dir's loadout (CLAUDE.md + .claude/*) — that is how Claude Code works
 (the understand-* skills in this repo are MANDATORY context before reasoning here).**
-There is deliberately no Python that "runs a department":
+There is deliberately no Python that "runs a department" *(native mode; cave mode adds one
+deterministic executor — `caveteams_round.py` — outside the CEO, driving MiniMax dept agents)*:
 
 1. `server/jobworld_agent.py` = the WORLD (store, task/goal/event/review API, heartbeat)
    + the main agent (the CEO). It is "single-agent CAVE" ON PURPOSE — the CEO brings

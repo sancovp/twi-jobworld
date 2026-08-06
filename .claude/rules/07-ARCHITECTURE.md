@@ -93,6 +93,15 @@ flowchart TB
 
 ## Version markers (which archi is CURRENT)
 
+- **The round (2026-08-06):** `ceo-bootstrap` is now THE WORKDAY ROUND — a converged contract
+  (heartbeat · `/input` · `/api/run-round` all → `workday_round_prompt()`), roster-gated (STEP 0 =
+  first boot on an empty roster, not soloing), with an executor SEAM at STEP 4 (`JW_ROUND_EXECUTOR`):
+  **native** = CC `TeamCreate` agent-teams (flag ON in-image); **cave** = `server/caveteams_round.py`
+  (`run_team` over MiniMax dept AgentRefs, personas compiled from `agents/<dept>.md` + `run-dept-*` +
+  the `outreach-*` skills). Reports flow through the unchanged `emit-event`/`ceo-review` contracts;
+  the round closes with a record; `harvest_sop` turns accumulated round patterns into skills
+  (rounds-as-data). Round HARNESS proven E2E; cave real-worker cognition is the open item (native =
+  the reliable-cognition path).
 - **CEO runtime:** `ClaudePMainAgent` (SDK, headless) = the MOCK/DEV harness mode.
   The tmux interactive CEO = the ORIGINAL BASE DESIGN and the intended PRODUCTION
   surface — `docker/entrypoint-jobworld.sh` launches `claude` (a real Anthropic

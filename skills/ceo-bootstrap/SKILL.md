@@ -125,8 +125,21 @@ curl -X POST http://localhost:3847/api/emit-event \
   }'
 ```
 
+## STEP 7 — harvest what recurs (rounds become reusable skills)
+
+When a `process` has repeated across rounds (check `GET /api/sop-patterns`),
+harvest it into a replayable skill:
+
+```bash
+curl -s -X POST http://localhost:3847/api/sop-patterns/<pattern_key>/harvest
+```
+
+`harvest_sop` scopes it automatically (1 agent → agent skill · 1 dept → dept
+skill · N depts → business skill). This is how the company's rounds turn into
+its growing skill library — the golden side of rounds-as-data.
+
 ## Rounds
 
 Each session = one round. Report the round number in every event. Event schema:
 `jobworld-report-event` (the canonical rich schema — `process`/`instructions`/
-`kv` feed the SOP engine).
+`kv` feed the SOP engine, which STEP 7 harvests into skills).
