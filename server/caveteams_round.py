@@ -100,6 +100,49 @@ def build_runtimes(depts, max_tool_calls=20):
                               max_tool_calls=max_tool_calls) for d in depts}
 
 
+class _MockDeptRuntime:
+    """A deterministic department worker (any object with .run(str) is a valid cave-teams runtime).
+    Proves the ROUND HARNESS — dispatch order, worker-acts, self-report, store-flip, leader-reap —
+    WITHOUT depending on a live LLM. It parses its own task id from the round prompt, posts the
+    completion observation (the same write contract a real worker uses), and returns a DONE line."""
+    def __init__(self, dept: str, jobworld_url: str = JOBWORLD_URL):
+        self.name = dept
+        self.dept = dept
+        self.url = jobworld_url
+
+    def run(self, prompt: str) -> str:
+        import re
+        # the round prompt names "<dept>'s task id is <task-...>"
+        m = re.search(rf"{self.dept}[^.]*?task id is (task-[0-9a-zA-Z\-]+)", prompt)
+        rm = re.search(r"goal_id=(goal-[0-9a-zA-Z\-]+)", prompt)
+        rr = re.search(r"round=(\d+)|Round (\d+)", prompt)
+        task = m.group(1) if m else ""
+        goal = rm.group(1) if rm else ""
+        rnd = int((rr.group(1) or rr.group(2))) if rr else 0
+        if task and goal:
+            payload = json.dumps({
+                "round": rnd, "source": f"{self.dept}-1",
+                "observation": {"goal_id": goal, "dept": self.dept, "agent": f"{self.dept}-1",
+                                "task": task, "status": "completed",
+                                "desc": f"[mock worker] {self.dept} stage complete",
+                                "domain": self.dept, "subdomain": "outreach",
+                                "process": f"outreach {self.dept} stage",
+                                "instructions": f"1. do {self.dept} action. 2. report.",
+                                "kv": {"mock_worker": True, "task": task}},
+                "who_cares": []}).encode()
+            try:
+                req = urllib.request.Request(f"{self.url}/api/emit-event", data=payload,
+                                             headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(req, timeout=4).close()
+            except Exception as e:
+                return f"DONE {self.dept}: (report POST failed: {e})"
+        return f"DONE {self.dept}: mock stage complete, reported task {task}"
+
+
+def build_mock_runtimes(depts):
+    return {d: _MockDeptRuntime(d) for d in depts}
+
+
 def pipeline_leader(order):
     """COD leader: walk the guardrail order, handing each dept the previous response artifact.
     Deterministic — the round ALWAYS traverses the whole pipeline; review happens in the store."""
@@ -163,6 +206,8 @@ def main():
     ap.add_argument("--max-steps", type=int, default=30)
     ap.add_argument("--dry-run", action="store_true",
                     help="build the team + personas and print them; run nothing")
+    ap.add_argument("--mock-workers", action="store_true",
+                    help="deterministic worker runtimes (prove the round HARNESS without a live LLM)")
     args = ap.parse_args()
 
     depts = [d.strip() for d in args.depts.split(",") if d.strip()]
@@ -186,7 +231,7 @@ def main():
         return
 
     from cave_teams.runner import run_team
-    runtimes = build_runtimes(order)
+    runtimes = build_mock_runtimes(order) if args.mock_workers else build_runtimes(order)
     res = run_team(team, args.task, pipeline_leader(order), runtimes, args.team_dir,
                    on_event=telemetry_bridge(args.round), max_steps=args.max_steps)
     print(json.dumps({"ok": res.get("ok"), "report": res.get("report", res.get("error")),
