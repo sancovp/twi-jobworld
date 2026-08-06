@@ -93,9 +93,11 @@ def build_team(depts):
     return WorkdayRound({}), order
 
 
-def build_runtimes(depts):
+def build_runtimes(depts, max_tool_calls=20):
+    # cap tool calls so a tooled worker DOES its one stage + reports instead of wandering the repo
     from cave_teams.examples import MiniMaxRuntime
-    return {d: MiniMaxRuntime(d, tools=None, system_prompt=compile_persona(d)) for d in depts}
+    return {d: MiniMaxRuntime(d, tools=None, system_prompt=compile_persona(d),
+                              max_tool_calls=max_tool_calls) for d in depts}
 
 
 def pipeline_leader(order):
@@ -114,10 +116,16 @@ def pipeline_leader(order):
         state["i"] += 1
         path = (alert or {}).get("message_path") or ctx.get("task_path", "")
         return Proposal(to=dept,
-                        prompt=f"Round task: {ctx['task']}. You are the {dept} step of the "
-                               f"pipeline. The file at the attached path is the task (or the "
-                               f"previous department's output) — use it, do your procedure, "
-                               f"report your observation, reply with your result summary.",
+                        prompt=f"You are the {dept} department. ROUND TASK: {ctx['task']}\n"
+                               f"Do EXACTLY three things and then STOP — do not explore the repo:\n"
+                               f"1. Do the single {dept} action your task describes (one command / "
+                               f"one artifact).\n"
+                               f"2. POST your completion to the event server per your report "
+                               f"contract: curl -s -X POST {JOBWORLD_URL}/api/emit-event with your "
+                               f"registered agent id, YOUR task id, status=completed, and a kv of "
+                               f"what you produced.\n"
+                               f"3. Reply with ONE line: 'DONE <dept>: <result + any file path>'.\n"
+                               f"The attached file is your task (or the prior department's output).",
                         path=path,
                         one_liner=f"{dept} is working")
     return leader
