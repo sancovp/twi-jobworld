@@ -1,145 +1,132 @@
 ---
 name: ceo-bootstrap
-description: CEO bootstrap skill for AI Jobworld. Orchestrates departments, runs rounds, reads events, reviews tasks.
+description: THE WORKDAY ROUND — the CEO's one procedure for running the company. Every trigger (heartbeat, /input, run-round) resolves HERE. Roster-gated (first boot happens instead of soloing), executor-seamed (native TeamCreate or cave-teams), evidence-checked, closed with a round record.
 ---
 
-# CEO Bootstrap Skill — AI Jobworld Command Center
+# The Workday Round — AI Jobworld Command Center
 
-You are the CEO of an AI company simulation. This is your bootstrap command center.
+You are the CEO. This skill is **the round**. Whether you got here from the
+heartbeat, a human `/input`, or `POST /api/run-round` — this same procedure runs,
+completely, every time. A round that half-runs is a bug, not a small round.
 
-## Your Job
-
-1. Read the event stream to see what happened last round
-2. Check for supposedly_done tasks (pending your review)
-3. Review each supposedly_done task and mark complete or send back to open
-4. Decide which departments need to run
-5. Read their skills to get their configs
-6. Use COMBINATOR to merge configs
-7. Run the combined team
-8. Read events to see results
+**THE INVARIANT (never violate): a round may NOT end with you having done a
+department's work inline.** If you catch yourself sourcing leads or writing copy
+yourself, stop — your roster is broken; go to STEP 0 and fix it. You assign,
+run, review, and record. Departments work.
 
 ## Event Server
 
-**Start the server first:**
+Start it first if it isn't running: `{instance}/start.sh` → `http://localhost:3847`
+(`POST /api/emit-event` to report · `GET /api/events` to read).
+
+## STEP 0 — the roster gate (bootstrap instead of soloing)
+
+Check that the company can actually work:
+
 ```bash
-{instance}/start.sh
+curl -s http://localhost:3847/api/departments   # the 5 depts registered?
+ls {instance}/skills/ | grep run-dept-          # a run-dept-* skill per dept?
 ```
 
-**URL:** `http://localhost:3847`
-**POST:** `/api/emit-event` — report your actions
-**GET:** `/api/events` — read what happened
+**If either is missing → this round IS first boot.** For each missing department
+(research, content, production, delivery, metacog): run `generate-employee`
+(dept + agent name + capabilities from `agents/<dept>.md`). That registers the
+employee, writes the agent file, and creates `run-dept-{dept}/SKILL.md`. Do all
+five, re-check the gate, then continue. Never proceed past this step with an
+empty roster — an empty roster is how a CEO ends up soloing the pipeline.
 
-## CEO Review API
+## STEP 1 — read what happened
 
-After agents complete tasks, you MUST review them:
+`GET /api/events` — read last round's events (and the last `workday round`
+record, if any) so you know where the company left off.
 
-**Check for supposedly_done tasks:**
+## STEP 2 — review supposedly-done work
+
 ```bash
 curl http://localhost:3847/api/tasks/supposedly-done
-```
-
-**Review a task (mark complete or not_complete):**
-```bash
 curl -X POST http://localhost:3847/api/ceo-review \
   -H "Content-Type: application/json" \
-  -d '{"task_id": "task-123", "decision": "complete"}'
+  -d '{"task_id": "task-123", "decision": "complete"}'   # or "not_complete"
 ```
 
-**Decision:** `"complete"` = confirm task done. `"not_complete"` = send back to open for agent to retry.
+Review EVERY supposedly_done task before new work: read the task's `result`
+(and the artifact it points at), then `complete` or `not_complete` (sends it
+back to open). Only COMPLETE tasks count toward Goal MET.
 
-## Task Review Flow
+## STEP 3 — decide and assign the work
 
-1. Agent completes task → task becomes "Supposedly Done" (pending review)
-2. YOU (CEO) check `/api/tasks/supposedly-done`
-3. For each task, review the result and decide:
-   - If done correctly: `{"task_id": "X", "decision": "complete"}`
-   - If not done correctly: `{"task_id": "X", "decision": "not_complete"}`
-4. Only COMPLETE tasks count toward Goal MET
+Decide which departments run this round (for outreach, the order and batch
+logic live in `run-outreach-campaign`). Create/assign the round's tasks via the
+API so every piece of work is a tracked task BEFORE anyone runs.
 
-## Event Format
+## STEP 4 — RUN the departments (the executor seam)
 
-Events are OBSERVATIONS. Use this format:
+Read each running department's `{instance}/skills/run-dept-{dept}/SKILL.md`
+(its process + team config). Then execute via the mode in `JW_ROUND_EXECUTOR`
+(default `native`):
+
+### mode=native — Claude Code agent teams (TeamCreate)
+
+Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (set in this image). Read
+`COMBINATOR.md` (this skill dir) → merge the running departments' team configs
+into ONE config → create the team with **TeamCreate** → the teammates run their
+departments' skills concurrently, each reporting via `jobworld-report-event`.
+
+### mode=cave — cave-teams leader-driven round (MiniMax department agents)
+
+The round as a cave-teams team: YOU are the leader; the departments are MiniMax
+agents (tooled: Bash + file-edit) built from `agents/<dept>.md`; the pipeline
+order is the guardrail; every dept response is bridged into `emit-event`.
+
+```bash
+python3 -m server.caveteams_round --task "<this round's assignment>" \
+  --depts research,content,production,delivery,metacog
+```
+
+(The runner compiles each dept's persona from `agents/<dept>.md` + its
+`outreach-*` skills + the report contract, runs `run_team` with a deterministic
+pipeline leader that hands each dept the previous dept's output file, and posts
+round telemetry to the event stream; the departments self-report their
+observations via `jobworld-report-event`, which is what flips tasks. Requires
+`cave-teams` installed; `--dry-run` prints the compiled team without running.
+See `server/caveteams_round.py`.)
+
+**Either mode, same contract:** departments do the work, report observations,
+tasks flip to supposedly_done. You do not inline their work while you wait.
+
+## STEP 5 — verify the evidence
+
+`GET /api/events` — confirm every department that ran actually REPORTED
+(observations with `goal_id`+`task`+`status`). A department that ran but left no
+event did not happen — re-run it or mark its task blocked. Then review the new
+supposedly_done tasks (STEP 2's API) now or at the top of the next round.
+
+## STEP 6 — close the round with a record
+
+Emit the round record — the round is DATA (the SOP engine accumulates
+`workday round` patterns from these):
 
 ```bash
 curl -X POST http://localhost:3847/api/emit-event \
   -H "Content-Type: application/json" \
   -d '{
-    "round": 1,
+    "round": <N>,
     "source": "ceo",
     "observation": {
-      "goal_id": "goal-123",
-      "dept": "ceo",
-      "agent": "ceo",
-      "task": "task-123",
-      "status": "completed",
-      "desc": "Reviewed and confirmed task complete"
+      "goal_id": "<the round goal>", "dept": "ceo", "agent": "ceo",
+      "task": "<the round task, if tracked>", "status": "completed",
+      "desc": "Round N: <which depts ran, what completed, verdicts>",
+      "domain": "ops", "subdomain": "workday-round", "process": "workday round",
+      "instructions": "0 roster gate. 1 read events. 2 review supposedly_done. 3 assign tasks. 4 run departments via executor. 5 verify reports. 6 emit round record.",
+      "kv": {"round": <N>, "executor": "<native|cave>", "depts_ran": [],
+             "tasks_completed": [], "tasks_sent_back": [], "next": "<decision>"}
     },
     "who_cares": []
   }'
 ```
 
-**Note:** Server generates `timestamp` automatically. Do not include it in your payload.
-
 ## Rounds
 
-Each session = one round. Report round number in all events.
-
-## Department Skills
-
-Read department skills from `{instance}/skills/run-dept-{department-name}/SKILL.md`.
-
-Each department skill contains:
-- Processes it does
-- Team config JSON
-
-## Available Departments
-
-- `run-dept-research` — Research companies for ICP fit
-
-## How to Run Departments
-
-1. **Read COMBINATOR.md** — explains how to merge team configs
-2. **Read department skills** — get their process and config
-3. **Merge configs** using the COMBINATOR
-4. **Run the merged team**
-5. **Agents report via event server** — read events to monitor
-
-## Team Config Structure
-
-```json
-{
-  "name": "department-name",
-  "description": "Department description",
-  "members": [
-    {
-      "agentId": "agent-id",
-      "name": "agent-name",
-      "agentType": "general-purpose",
-      "model": "claude-sonnet-4-6",
-      "joinedAt": 1234567890,
-      "tmuxPaneId": "",
-      "cwd": "/path/to/working/dir",
-      "subscriptions": []
-    }
-  ]
-}
-```
-
-## How to Combine Departments
-
-1. Read each department's team config from their SKILL.md
-2. Extract the members array from each config
-3. Merge all members into one array
-4. Create combined config with all members
-5. Run the combined team
-
-## Example
-
-If research has members [A] and sales has members [B], the combined team has members [A, B].
-
-## Important
-
-- The combined team runs all departments simultaneously
-- Each agent follows their own department's skill
-- They communicate via the event server (POST to http://localhost:3847/api/emit-event)
-- ALWAYS review supposedly_done tasks before starting new rounds
+Each session = one round. Report the round number in every event. Event schema:
+`jobworld-report-event` (the canonical rich schema — `process`/`instructions`/
+`kv` feed the SOP engine).
