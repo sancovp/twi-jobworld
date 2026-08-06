@@ -100,8 +100,9 @@ flowchart TB
   (`run_team` over MiniMax dept AgentRefs, personas compiled from `agents/<dept>.md` + `run-dept-*` +
   the `outreach-*` skills). Reports flow through the unchanged `emit-event`/`ceo-review` contracts;
   the round closes with a record; `harvest_sop` turns accumulated round patterns into skills
-  (rounds-as-data). Round HARNESS proven E2E; cave real-worker cognition is the open item (native =
-  the reliable-cognition path).
+  (rounds-as-data). Proven E2E with REAL MiniMax workers: research sources (`jwout pull`) + content
+  writes copy, both self-report → tasks flip → goal `met`. Both executors viable; open item is a live
+  native `TeamCreate` round (needs a real CEO turn).
 - **CEO runtime:** `ClaudePMainAgent` (SDK, headless) = the MOCK/DEV harness mode.
   The tmux interactive CEO = the ORIGINAL BASE DESIGN and the intended PRODUCTION
   surface — `docker/entrypoint-jobworld.sh` launches `claude` (a real Anthropic
