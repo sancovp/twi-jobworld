@@ -149,21 +149,31 @@ class JobworldAgent(CAVEAgent):
             every=30.0,
         ))
 
-    def _default_heartbeat_prompt(self) -> str:
+    def workday_round_prompt(self) -> str:
+        """THE one round prompt — every trigger (heartbeat, /api/run-round, a bare /input asking
+        for a round) converges on this so a real Workday round runs every time (the workday
+        contract in the ceo-bootstrap skill), instead of a vague "check status" poke."""
         company_name = self.store["company"]["name"] if self.store.get("company") else "the company"
         port = self.config.port
         supposedly_done = [t for t in self.store["tasks"].values() if t["status"] == "supposedly_done"]
         open_tasks = [t for t in self.store["tasks"].values() if t["status"] == "open"]
 
-        lines = [f"CEO heartbeat for {company_name}. Check status and take action."]
+        lines = [
+            f"Run the WORKDAY ROUND for {company_name} now: invoke the ceo-bootstrap skill and "
+            "complete ALL its steps (0 roster gate, 1 read events, 2 review supposedly_done, "
+            "3 assign tasks, 4 run the departments via the executor seam, 5 verify reports, "
+            "6 emit the round record). Do not do department work inline."
+        ]
         if supposedly_done:
             lines.append(f"{len(supposedly_done)} tasks pending your review — curl http://localhost:{port}/api/tasks/supposedly-done")
         if open_tasks:
             lines.append(f"{len(open_tasks)} open tasks waiting for agents.")
-        if not supposedly_done and not open_tasks:
-            lines.append("All clear. Review events and plan next round.")
         lines.append(f"Dashboard: http://localhost:{port}")
         return " ".join(lines)
+
+    def _default_heartbeat_prompt(self) -> str:
+        # the heartbeat IS a round trigger — same prompt as every other trigger (the convergence)
+        return self.workday_round_prompt()
 
     # ========================================
     # PERSISTENCE

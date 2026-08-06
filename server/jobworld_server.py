@@ -240,9 +240,20 @@ class JobworldHTTPServer(CAVEHTTPServer):
         # === Round ===
         @self.app.post("/api/run-round")
         def run_round(data: Dict[str, Any]):
+            """DRIVE a Workday round (the trigger-convergence contract): send the one round
+            prompt to the CEO — same send path as /input — instead of only broadcasting a
+            UI ping. All triggers (heartbeat, this endpoint, /input) converge on
+            jw.workday_round_prompt() so a real round runs every time."""
             r = data.get("round")
             jw.broadcast({"type": "round_start", "data": {"round": r}})
-            return {"success": True, "round": r}
+            if not jw._ensure_attached():
+                return {"success": False, "round": r, "error": "not attached — round not driven"}
+            jw.last_input_at = _time.time()
+            prompt = jw.workday_round_prompt()
+            if r is not None:
+                prompt = f"{prompt} This is round {r} — report round={r} in every event."
+            jw.main_agent.send_keys(prompt, "Enter")
+            return {"success": True, "round": r, "driven": True, "prompt": prompt[:120]}
 
         # === Ralph Loop ===
         @self.app.get("/api/ralph-loop")
