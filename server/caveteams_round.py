@@ -237,9 +237,10 @@ def main():
     print(json.dumps({"ok": res.get("ok"), "report": res.get("report", res.get("error")),
                       "responders": [m["frm"] for m in res.get("messages", [])
                                      if m.get("kind") == "response"],
-                      "team_dir": args.team_dir}, indent=2))
-    if not res.get("ok"):
-        sys.exit(1)
+                      "team_dir": args.team_dir}, indent=2), flush=True)
+    # heaven leaves non-daemon threads alive → a plain return HANGS the process after the round
+    # completes. Hard-exit so the round actually ends (the runner is a one-shot per round).
+    os._exit(0 if res.get("ok") else 1)
 
 
 if __name__ == "__main__":
