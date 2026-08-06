@@ -32,6 +32,12 @@ from pathlib import Path
 
 JOBWORLD_URL = os.environ.get("JOBWORLD_URL", "http://localhost:3847")
 SRC_DIR = Path(os.environ.get("JW_INSTANCE_DIR", "/agent"))
+# the INSTANCE skills dir (where generate-employee wrote run-dept-{dept}, carrying the dept's
+# registered agent id + roster) — distinct from SRC_DIR, which is the baked canon
+INSTANCE_SKILLS = Path(os.environ.get(
+    "JW_INSTANCE_SKILLS",
+    os.path.join(os.environ.get("JW_INSTANCE_DATA", "/jobworld_data/b6-outreach"),
+                 ".claude", "skills")))
 
 # dept -> the outreach skills whose procedures get inlined into its persona
 DEPT_SKILLS = {
@@ -54,6 +60,10 @@ def compile_persona(dept: str) -> str:
     parts = [f"You are the {dept} department of this company (a tooled coding agent: you have "
              f"Bash and file-edit; `jwout` is on PATH for external effects).",
              _read(SRC_DIR / "agents" / f"{dept}.md") or f"(persona file agents/{dept}.md missing)"]
+    rundept = _read(INSTANCE_SKILLS / f"run-dept-{dept}" / "SKILL.md")
+    if rundept:
+        parts.append(f"\n--- YOUR DEPARTMENT (roster, your registered agent id, how you get "
+                     f"tasks) ---\n{rundept}")
     for s in DEPT_SKILLS.get(dept, []):
         body = _read(SRC_DIR / "skills" / s / "SKILL.md")
         if body:
