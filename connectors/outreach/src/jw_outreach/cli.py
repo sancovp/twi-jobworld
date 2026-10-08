@@ -1,0 +1,391 @@
+"""The universal JW outreach CLI — external-effect verbs only.
+
+    jwout pull   --titles a,b --seniorities director,vp --status verified --domains x.com,y.com --limit N
+    jwout video  "<prompt>" --out teaser.mp4 [--model M]
+    jwout page   --brand BRAND --concept-file F --calendar-url URL --out page.html
+                 [--video-url URL] [--honesty-note TEXT] [--headline TEXT]
+                 [--from-name N] [--from-title T] [--from-email E] [--from-phone P]
+                 [--bg-color HEX] [--accent-color HEX] [--button-fg-color HEX]
+    jwout send   --to a@b.com --subject S (--body TEXT | --body-file F) --from f@dom [--from-name N] [--reply-to R]
+                 [--brand B --touch N --variant V --cohort C --asset-url U --click-token T --click-dest URL --unsub-token UT]  (records unless --no-record)
+    jwout track    event <send_id> <type>
+    jwout track    report [--cost FLOAT]
+    jwout host     <file> [--uid UID]
+    jwout serve    [--host H] [--port N] [--docroot D]  (/<uid>/<file>->view; /c/<token>->click+302 stored dest; /u/<token>->unsubscribe)
+    jwout dashboard [--host H] [--port N] [--client-dir D]  (localhost read-view: / = ops funnel, /business = exec)
+    jwout market   refresh [--client-dir D]  (free Apollo search totals → TAM/SAM + seniority cube; SOM computed live)
+    jwout qualify  set <email> --tier T [--score N] [--reason R] | summary  (store LLM ICP fit → qualified TAM)
+    jwout suppress add <email> [--reason R] | check <email>  (opt-out list; check exits 2 if suppressed)
+    jwout reply    [--folder INBOX] [--all] [--limit N] [--json]
+
+Every verb does something the LLM cannot do by emitting tokens. Copy, rules,
+templates and dedupe lists are NOT here — they are instructions the LLM applies.
+"""
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+from . import dashboard, db, host, market, page, reply, send, serve, source, video
+
+
+def _split(s: str) -> list[str]:
+    return [x.strip() for x in s.split(",") if x.strip()] if s else []
+
+
+def _conn(args):
+    return db.connect(Path(args.db)) if getattr(args, "db", "") else db.connect()
+
+
+# ---- pull -----------------------------------------------------------------
+
+def cmd_pull(args):
+    contacts = source.pull_contacts(
+        titles=_split(args.titles),
+        seniorities=_split(args.seniorities),
+        email_statuses=_split(args.status),
+        organization_domains=_split(args.domains),
+        per_page=args.limit,
+        enrich=not args.no_enrich,
+        reveal_personal_emails=args.reveal_personal,
+    )
+    if args.no_enrich:
+        # Preview only — NOT saved. Un-enriched rows have empty email, which is the
+        # contacts PK, so they cannot be persisted distinctly. Print who matched.
+        for c in contacts:
+            print(f"  {c.brand}  |  {c.first_name} {c.last_name}  |  {c.title}  |  {c.domain}")
+        print(f"searched (FREE, no emails, NOT saved): {len(contacts)} matches")
+        return
+    conn = _conn(args)
+    for c in contacts:
+        db.save_contact(conn, c)
+    print(f"pulled + enriched: {len(contacts)} contacts saved")
+
+
+# ---- video ----------------------------------------------------------------
+
+def cmd_video(args):
+    out = video.generate(args.prompt, args.out, args.model)
+    print(out)
+
+
+# ---- page -----------------------------------------------------------------
+
+def cmd_page(args):
+    concept = Path(args.concept_file).read_text(encoding="utf-8") if args.concept_file else args.concept
+    if not concept:
+        import sys
+        sys.exit("page: --concept-file or --concept is required")
+    out = page.write_page(
+        args.out,
+        brand=args.brand,
+        concept=concept,
+        calendar_url=args.calendar_url,
+        video_url=args.video_url or "",
+        honesty_note=args.honesty_note or "",
+        headline=args.headline or "",
+        studio_name=args.studio_name or "B6 Studios",
+        cta_label=args.cta_label or "Book 15 minutes with Mason and Weston",
+        cta_sub=args.cta_sub or "If this lands, grab fifteen minutes with us and we will build the rest with you.",
+        from_name=args.from_name or "Mason Collins",
+        from_title=args.from_title or "President, B6 Studios",
+        from_email=args.from_email or "mason@b6studios.com",
+        from_phone=args.from_phone or "415.717.5037",
+        bg_color=args.bg_color or "#0d2045",
+        accent_color=args.accent_color or "#c8f000",
+        button_fg_color=args.button_fg_color or "#0d2045",
+    )
+    print(out)
+
+
+# ---- send -----------------------------------------------------------------
+
+def cmd_send(args):
+    body = Path(args.body_file).read_text() if args.body_file else args.body
+    result = send.deliver(
+        to_email=args.to, subject=args.subject, body=body,
+        from_email=getattr(args, "from"), from_name=args.from_name, reply_to=args.reply_to,
+        first_name=args.first_name, last_name=args.last_name,
+        company=args.company or args.brand,
+    )
+    backend = result.get("backend", "smtp")
+    if result.get("dry_run"):
+        # A dry run must NEVER write a send row: dry-run rows would permanently
+        # pollute track report / the dashboards / touches counts, and "sent"
+        # would be a lie. Print the payload and stop.
+        print(result["payload"])
+        print(f"DRY RUN — nothing sent to {args.to}, nothing recorded")
+        return
+    if args.no_record:
+        print(f"sent to {args.to} via {backend} (not recorded)")
+        return
+    conn = _conn(args)
+    sid = db.record_send(conn, to_email=args.to, subject=args.subject, body=body,
+                         brand=args.brand, touch=args.touch, variant=args.variant,
+                         cohort=args.cohort, asset_url=args.asset_url,
+                         click_token=args.click_token, click_dest=args.click_dest,
+                         unsub_token=args.unsub_token)
+    print(f"sent to {args.to} via {backend}; send_id={sid}")
+
+
+# ---- track ----------------------------------------------------------------
+
+def cmd_track_event(args):
+    conn = _conn(args)
+    db.record_event(conn, args.send_id, args.type)
+    print(f"event '{args.type}' recorded for send {args.send_id}")
+
+
+def cmd_track_report(args):
+    conn = _conn(args)
+    print(db.report(conn, cost_per_send=args.cost or 0.0))
+
+
+# ---- host -----------------------------------------------------------------
+
+def cmd_host(args):
+    print(host.host_file(args.file, uid=args.uid or None))
+
+
+# ---- serve -----------------------------------------------------------------
+
+def cmd_serve(args):
+    serve.serve(host=args.host, port=args.port, docroot=args.docroot or None,
+                db_path=args.db or None)
+
+
+# ---- dashboard -------------------------------------------------------------
+
+def cmd_dashboard(args):
+    dashboard.dashboard(host=args.host, port=args.port, db_path=args.db or None,
+                        client_dir=args.client_dir or None)
+
+
+# ---- qualify (ICP score storage) -------------------------------------------
+
+def cmd_qualify_set(args):
+    conn = _conn(args)
+    if not db.set_fit(conn, args.email, args.tier.upper(), args.score, args.reason):
+        sys.exit(f"no contact '{args.email}' to score (pull it first)")
+    print(f"scored {args.email}: tier {args.tier.upper()} ({args.score})")
+
+
+def cmd_qualify_summary(args):
+    conn = _conn(args)
+    s = db.fit_summary(conn)
+    rate = f"{s['rate']*100:.0f}%" if s["rate"] is not None else "—"
+    print(f"scored {s['scored']} · good-fit {s['good_fit']} ({rate}) · by tier {s['by_tier']}")
+
+
+# ---- market ----------------------------------------------------------------
+
+def cmd_market_refresh(args):
+    client_dir = args.client_dir or os.environ.get("JW_CLIENT_DIR")
+    if not client_dir:
+        sys.exit("set --client-dir or JW_CLIENT_DIR (need the targeting for TAM/SAM)")
+    client = json.loads((Path(client_dir) / "client.json").read_text())
+    conn = _conn(args)
+    res = market.refresh(conn, client)
+    line = f"market snapshot: TAM {res['tam']:,} decision-makers · SAM {res['sam']:,} reachable"
+    if res.get("org_tam") is not None:
+        line += f" · Apollo accounts {res['org_tam']:,}"
+    cen = res.get("census")
+    if isinstance(cen, dict) and "count" in cen:
+        line += f" · Census {cen['count']:,} establishments"
+    elif isinstance(cen, dict) and "error" in cen:
+        line += f" · Census: {cen['error']}"
+    print(line)
+
+
+# ---- suppress --------------------------------------------------------------
+
+def cmd_suppress_add(args):
+    conn = _conn(args)
+    db.record_suppression(conn, args.email, reason=args.reason, source=args.source)
+    print(f"suppressed {args.email} (reason={args.reason})")
+
+
+def cmd_suppress_check(args):
+    conn = _conn(args)
+    if db.is_suppressed(conn, args.email):
+        print(f"SUPPRESSED: {args.email} is on the opt-out list; do not send.")
+        sys.exit(2)
+    print(f"CLEAR: {args.email} is not suppressed.")
+
+
+# ---- reply ----------------------------------------------------------------
+
+def cmd_reply(args):
+    msgs = reply.read(folder=args.folder,
+                      criterion="ALL" if args.all else "UNSEEN",
+                      limit=args.limit)
+    if args.json:
+        print(json.dumps(msgs, indent=2))
+        return
+    for m in msgs:
+        print(f"- {m['from']}  |  {m['subject']}\n  {m['snippet'][:140]}")
+    print(f"{len(msgs)} message(s)")
+
+
+# ---- parser ---------------------------------------------------------------
+
+def _add_db(p):
+    p.add_argument("--db", default="", help="sqlite path (default: env JWOUT_DB or data/outreach.db)")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="jwout", description=__doc__.splitlines()[0])
+    top = parser.add_subparsers(dest="cmd", required=True)
+
+    p = top.add_parser("pull", help="source contacts from Apollo")
+    p.add_argument("--titles", default="")
+    p.add_argument("--seniorities", default="")
+    p.add_argument("--status", default="", help="contact_email_status filter, comma sep")
+    p.add_argument("--domains", default="")
+    p.add_argument("--limit", type=int, default=25, help="per_page (search width)")
+    p.add_argument("--no-enrich", action="store_true",
+                   help="search only (FREE, no emails) — preview who matches before spending credits")
+    p.add_argument("--reveal-personal", action="store_true",
+                   help="enrich personal emails too (default: work emails only)")
+    _add_db(p)
+    p.set_defaults(func=cmd_pull)
+
+    p = top.add_parser("video", help="generate a clip from a prompt")
+    p.add_argument("prompt")
+    p.add_argument("--out", default="teaser.mp4")
+    p.add_argument("--model", default="")
+    p.set_defaults(func=cmd_video)
+
+    p = top.add_parser("page", help="render a per-brand landing page (HTML) to a local file; host it with `jwout host`")
+    p.add_argument("--brand", required=True, help="brand name (e.g. 'Oatly')")
+    g2 = p.add_mutually_exclusive_group(required=True)
+    g2.add_argument("--concept-file", default="", help="path to concept text file (written by outreach-write)")
+    g2.add_argument("--concept", default="", help="inline concept text (for scripting; prefer --concept-file)")
+    p.add_argument("--calendar-url", required=True, help="the 15-min booking link (the sole CTA on the page)")
+    p.add_argument("--out", required=True, help="output .html file path (then host with `jwout host`)")
+    p.add_argument("--video-url", default="", help="hosted teaser URL (embedded as <video> if set)")
+    p.add_argument("--honesty-note", default="",
+                   help="honesty framing line shown below the video (e.g. 'we mocked this up to show the idea')")
+    p.add_argument("--headline", default="", help="custom page headline (default: 'What a <brand> show looks like.')")
+    p.add_argument("--studio-name", default="", help="studio name in the logo bar + title (default: B6 Studios)")
+    p.add_argument("--cta-label", default="", help="CTA button text (default: 'Book 15 minutes with Mason and Weston')")
+    p.add_argument("--cta-sub", default="", help="line above the CTA button (B6 default)")
+    p.add_argument("--from-name", default="", help="sender name for the page signature (default: Mason Collins)")
+    p.add_argument("--from-title", default="", help="sender title (default: President, B6 Studios)")
+    p.add_argument("--from-email", default="", help="sender email (default: mason@b6studios.com)")
+    p.add_argument("--from-phone", default="", help="sender phone (default: 415.717.5037)")
+    p.add_argument("--bg-color", default="", help="page background hex (default: #0d2045 navy)")
+    p.add_argument("--accent-color", default="", help="accent + CTA color hex (default: #c8f000 chartreuse)")
+    p.add_argument("--button-fg-color", default="", help="CTA button text color hex (default: #0d2045 navy)")
+    p.set_defaults(func=cmd_page)
+
+    p = top.add_parser("send", help="deliver outbound via SEND_BACKEND (smtp | instantly)")
+    p.add_argument("--to", required=True)
+    p.add_argument("--subject", required=True)
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--body", default="")
+    g.add_argument("--body-file", default="")
+    p.add_argument("--from", required=True, help="from address")
+    p.add_argument("--from-name", default="")
+    p.add_argument("--reply-to", default="")
+    p.add_argument("--first-name", default="")
+    p.add_argument("--last-name", default="")
+    p.add_argument("--company", default="", help="company_name (Instantly backend; falls back to --brand)")
+    p.add_argument("--brand", default="")
+    p.add_argument("--touch", type=int, default=1)
+    p.add_argument("--variant", default="")
+    p.add_argument("--cohort", default="")
+    p.add_argument("--asset-url", default="")
+    p.add_argument("--click-token", default="",
+                   help="the token embedded in tracked links in the body; serve /c/<token> records a click")
+    p.add_argument("--click-dest", default="",
+                   help="the destination serve /c/<token> redirects to (e.g. the calendar URL); stored on the send, never taken from the request")
+    p.add_argument("--unsub-token", default="",
+                   help="the token in the body's unsubscribe link; serve /u/<token> suppresses this recipient")
+    p.add_argument("--no-record", action="store_true", help="send without writing to the DB")
+    _add_db(p)
+    p.set_defaults(func=cmd_send)
+
+    p_track = top.add_parser("track", help="record events / report metrics")
+    sub = p_track.add_subparsers(dest="verb", required=True)
+    pe = sub.add_parser("event", help="record one event for a send")
+    pe.add_argument("send_id", type=int)
+    pe.add_argument("type", help="delivered|bounced|open|click|view|reply|booked|...")
+    _add_db(pe)
+    pe.set_defaults(func=cmd_track_event)
+    pr = sub.add_parser("report", help="metrics by variant")
+    pr.add_argument("--cost", type=float, default=None)
+    _add_db(pr)
+    pr.set_defaults(func=cmd_track_report)
+
+    p = top.add_parser("host", help="place an asset at a unique URL")
+    p.add_argument("file")
+    p.add_argument("--uid", default="")
+    p.set_defaults(func=cmd_host)
+
+    p = top.add_parser("serve", help="serve hosted assets; record view/click; one-click unsubscribe")
+    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--docroot", default="")
+    _add_db(p)
+    p.set_defaults(func=cmd_serve)
+
+    p = top.add_parser("dashboard", help="read-view: ops funnel (/) + business/exec (/business); localhost")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8787)
+    p.add_argument("--client-dir", default="", help="client config dir for the gate panel (default: JW_CLIENT_DIR)")
+    _add_db(p)
+    p.set_defaults(func=cmd_dashboard)
+
+    p_mkt = top.add_parser("market", help="TAM/SAM market sizing (free Apollo search totals)")
+    sub = p_mkt.add_subparsers(dest="verb", required=True)
+    pr = sub.add_parser("refresh", help="snapshot TAM (all ICP decision-makers) + SAM (reachable) + seniority cube")
+    pr.add_argument("--client-dir", default="", help="client config dir (default: JW_CLIENT_DIR)")
+    _add_db(pr)
+    pr.set_defaults(func=cmd_market_refresh)
+
+    p_q = top.add_parser("qualify", help="store/read LLM ICP fit scores (qualified TAM)")
+    sub = p_q.add_subparsers(dest="verb", required=True)
+    qs = sub.add_parser("set", help="store an ICP fit score on a contact")
+    qs.add_argument("email")
+    qs.add_argument("--tier", required=True, help="A|B|C|D (A/B = good fit)")
+    qs.add_argument("--score", type=int, default=None, help="0..100")
+    qs.add_argument("--reason", default="", help="the reasoning trace (auditable)")
+    _add_db(qs)
+    qs.set_defaults(func=cmd_qualify_set)
+    qsum = sub.add_parser("summary", help="qualification rollup (rate + by-tier)")
+    _add_db(qsum)
+    qsum.set_defaults(func=cmd_qualify_summary)
+
+    p_sup = top.add_parser("suppress", help="opt-out list (CAN-SPAM): add / check")
+    sub = p_sup.add_subparsers(dest="verb", required=True)
+    pa = sub.add_parser("add", help="add an email to the opt-out list")
+    pa.add_argument("email")
+    pa.add_argument("--reason", default="manual", help="unsubscribe|hostile|bounce|manual")
+    pa.add_argument("--source", default="api")
+    _add_db(pa)
+    pa.set_defaults(func=cmd_suppress_add)
+    pc = sub.add_parser("check", help="is this email suppressed? exit 2 if yes")
+    pc.add_argument("email")
+    _add_db(pc)
+    pc.set_defaults(func=cmd_suppress_check)
+
+    p = top.add_parser("reply", help="read replies via REPLY_BACKEND (imap | instantly)")
+    p.add_argument("--folder", default="INBOX")
+    p.add_argument("--all", action="store_true", help="all mail, not just unseen")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_reply)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

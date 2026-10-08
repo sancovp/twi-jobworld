@@ -20,6 +20,10 @@ from cave.core.blockage_store import BlockageStore
 from cave.core.config import CAVEConfig
 from cave.core.models import MainAgentConfig
 
+# The PromptWorld SDK-CEO pattern: a claude_agent_sdk-backed main_agent (drop-in for the tmux
+# CodeAgent surface). p_main_agent.py + convo_registry.py are copied VERBATIM from PromptWorld.
+from p_main_agent import ClaudePMainAgent
+
 logger = logging.getLogger(__name__)
 
 # Business domain enum — general business function buckets
@@ -72,6 +76,36 @@ class JobworldAgent(CAVEAgent):
 
         self._load_data()
         super().__init__(config=config)
+
+        # === THE PROMPTWORLD PATTERN, AND NOTHING ELSE ===
+        # super().__init__ attached a tmux ClaudeCodeAgent as self.main_agent. Replace it with a
+        # claude_agent_sdk-backed ClaudePMainAgent — identical method surface (session_exists/
+        # create_session/send_keys/capture_pane/send_and_wait), runs the SDK headless on MiniMax,
+        # NO tmux. This is the exact swap PromptWorld does at promptworld_agent.py:111-140; every
+        # other line of Jobworld (server, store, SOP engine, work-graph, heartbeat) is untouched
+        # because ClaudePMainAgent is a drop-in for the surface they already call.
+        self._convos_path = self.jobworld_dir / ".jobworld" / "convos.json"
+        # Load the CEO persona into the SDK agent's system prompt. Prefer a
+        # per-instance override, else fall back to the persona BAKED INTO THE
+        # IMAGE (server/../agents/CEO.md). Without this fallback the persona is
+        # empty on a fresh instance (the entrypoint never populated the instance
+        # agents dir) and the CEO boots not knowing it runs outreach. The baked
+        # path also survives the JW watchdog that reverts the instance CLAUDE.md.
+        baked_agents = Path(__file__).resolve().parents[1] / "agents"
+        instance_ceo = self.jobworld_dir / "agents" / "CEO.md"
+        ceo_persona_path = instance_ceo if instance_ceo.exists() else baked_agents / "CEO.md"
+        ceo_persona = ceo_persona_path.read_text() if ceo_persona_path.exists() else ""
+        self.main_agent = ClaudePMainAgent(
+            alias="ceo",
+            cwd=str(self.jobworld_dir),
+            registry_path=str(self._convos_path),
+            append_system_prompt=ceo_persona,
+            plugins=[],  # JW does not use PromptWorld's doc-mirror; its auto-discover
+                         # (_doc_mirror_plugin_root) assumes PW's deep monorepo path and
+                         # IndexErrors at this layout. [] = skip it. (Found by running.)
+        )
+        self.main_agent.create_session()
+
         self._wire_ceo_heartbeat()
 
         logger.info(
@@ -115,21 +149,31 @@ class JobworldAgent(CAVEAgent):
             every=30.0,
         ))
 
-    def _default_heartbeat_prompt(self) -> str:
+    def workday_round_prompt(self) -> str:
+        """THE one round prompt — every trigger (heartbeat, /api/run-round, a bare /input asking
+        for a round) converges on this so a real Workday round runs every time (the workday
+        contract in the ceo-bootstrap skill), instead of a vague "check status" poke."""
         company_name = self.store["company"]["name"] if self.store.get("company") else "the company"
         port = self.config.port
         supposedly_done = [t for t in self.store["tasks"].values() if t["status"] == "supposedly_done"]
         open_tasks = [t for t in self.store["tasks"].values() if t["status"] == "open"]
 
-        lines = [f"CEO heartbeat for {company_name}. Check status and take action."]
+        lines = [
+            f"Run the WORKDAY ROUND for {company_name} now: invoke the ceo-bootstrap skill and "
+            "complete ALL its steps (0 roster gate, 1 read events, 2 review supposedly_done, "
+            "3 assign tasks, 4 run the departments via the executor seam, 5 verify reports, "
+            "6 emit the round record). Do not do department work inline."
+        ]
         if supposedly_done:
             lines.append(f"{len(supposedly_done)} tasks pending your review — curl http://localhost:{port}/api/tasks/supposedly-done")
         if open_tasks:
             lines.append(f"{len(open_tasks)} open tasks waiting for agents.")
-        if not supposedly_done and not open_tasks:
-            lines.append("All clear. Review events and plan next round.")
         lines.append(f"Dashboard: http://localhost:{port}")
         return " ".join(lines)
+
+    def _default_heartbeat_prompt(self) -> str:
+        # the heartbeat IS a round trigger — same prompt as every other trigger (the convergence)
+        return self.workday_round_prompt()
 
     # ========================================
     # PERSISTENCE
@@ -184,10 +228,19 @@ class JobworldAgent(CAVEAgent):
     def broadcast(self, message: dict):
         import asyncio
         data = json.dumps(message)
+        # On a non-async thread there is no running loop — asyncio.create_task
+        # raises RuntimeError, which is OUR calling context's problem, not the
+        # socket's: treating it as a dead client dropped live dashboard
+        # connections. Skip the frame instead; only a real per-socket failure
+        # marks a client dead.
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return  # no loop to schedule on; dashboard misses one frame, clients live
         dead = set()
         for ws in self._ws_clients:
             try:
-                asyncio.create_task(ws.send_text(data))
+                loop.create_task(ws.send_text(data))
             except Exception:
                 dead.add(ws)
         self._ws_clients -= dead
@@ -803,7 +856,19 @@ class JobworldAgent(CAVEAgent):
         if agent_id:
             agent = self.store["agents"].get(agent_id)
             if agent:
-                open_tasks = [t for t in open_tasks if t.get("dept") == agent.get("dept_id") or not t.get("agent_id")]
+                # task["dept"] is a dept NAME (create_task free string) while
+                # agent["dept_id"] is an id ("dept-<ts>") — the raw compare
+                # never matched, so the dept filter was dead (masked by the
+                # unassigned clause). Resolve the agent's dept NAME and compare
+                # case-insensitively; accept a stored id too.
+                dept = self.store["departments"].get(agent.get("dept_id")) or {}
+                dept_name = (dept.get("name") or "").strip().lower()
+                open_tasks = [
+                    t for t in open_tasks
+                    if (t.get("dept") or "").strip().lower() == dept_name
+                    or t.get("dept") == agent.get("dept_id")
+                    or not t.get("agent_id")
+                ]
         return sorted(open_tasks, key=lambda t: t["created_at"])[:3]
 
     def assign_task(self, task_id: str, agent_id: str) -> Optional[dict]:

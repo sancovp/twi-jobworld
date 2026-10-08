@@ -27,7 +27,9 @@ AGENT_FILE="${COMPANY_SLUG}-${DEPT_SLUG}-${AGENT_SLUG}"
 
 AGENTS_DIR="${CLAUDE_AGENTS_DIR:-$HOME/.claude/agents}"
 SKILLS_DIR="${CLAUDE_SKILLS_DIR:-$HOME/.claude/skills}"
-DEPT_SKILL_DIR="$SKILLS_DIR/$DEPT_SLUG"
+# the dept skill is run-dept-{dept} — the name ceo-bootstrap (STEP 0 gate + STEP 4) and the
+# generate-employee SKILL.md contract use; a bare {dept} dir is invisible to the roster gate
+DEPT_SKILL_DIR="$SKILLS_DIR/run-dept-$DEPT_SLUG"
 AGENT_PATH="$AGENTS_DIR/${AGENT_FILE}.md"
 
 echo "=== Generate Employee ==="
@@ -49,7 +51,8 @@ for d in data:
         print(d["id"])
         break
 else:
-    print(f"ERROR: Department not found: {os.environ["DEPT"]}", file=sys.stderr)
+    # NOTE: single quotes inside the f-string — nested double quotes are a SyntaxError on py<3.12
+    print(f"ERROR: Department not found: {os.environ['\''DEPT'\'']}", file=sys.stderr)
     sys.exit(1)
 ' <<< "$DEPT_RESPONSE")"
 
@@ -96,7 +99,7 @@ AGENTEOF
 if [ ! -f "$DEPT_SKILL_DIR/SKILL.md" ]; then
   cat > "$DEPT_SKILL_DIR/SKILL.md" <<SKILLEOF
 ---
-name: $DEPT_SLUG
+name: run-dept-$DEPT_SLUG
 description: $DEPT department for $COMPANY_NAME
 version: 1.0.0
 tags: [$COMPANY_SLUG, $DEPT_SLUG]

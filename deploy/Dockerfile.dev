@@ -1,0 +1,34 @@
+# avi-jw DEV container — a disposable Claude Code shell around a PERSISTENT
+# client-account login and your REAL repo checkout.
+#
+#   image  = toolchain only (this file). No credentials, no work-state, ever.
+#   volume = the client-account Claude login (~/.claude), survives container death.
+#   bind   = your live ~/avi-jw checkout at /workspace. git IS the export;
+#            nothing gets "baked back" into an image.
+#
+# Run it via deploy/dev-shell.sh (which wires the volume + bind + isolation).
+FROM node:20-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git jq curl ca-certificates procps python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Claude Code CLI — authenticates from $HOME/.claude, which dev-shell.sh mounts
+# as a named volume. Your host login is NEVER mounted; the two accounts coexist.
+RUN npm install -g @anthropic-ai/claude-code
+
+# Non-root dev user (Claude Code refuses --dangerously-skip-permissions as root,
+# and we don't want root-owned files appearing in the bind-mounted repo).
+# ~/.claude MUST pre-exist owned by dev: a named volume mounted at a path absent
+# from the image gets created ROOT-owned and `claude login` dies on write.
+RUN useradd -m -s /bin/bash dev \
+    && mkdir -p /home/dev/.claude \
+    && chown -R dev:dev /home/dev/.claude
+USER dev
+ENV HOME=/home/dev
+ENV PATH="/home/dev/.local/bin:${PATH}"
+WORKDIR /workspace
+
+# jwout for in-container testing: dev-shell.sh pip-installs the bind-mounted
+# connector editable at start, so the container always runs YOUR current code.
+CMD ["/bin/bash"]

@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JW outreach $client config",
+  "description": "Structured params for one client. Instructions live in the sibling .md files; this file holds only what connector verbs and worker logic consume. Never fabricate values — unknowns are null and documented as NEEDS-FROM-<client>.",
+  "type": "object",
+  "required": ["name", "targeting", "sending", "from_name", "reply_to", "calendar_url", "variants", "cohorts", "host_base_url", "env_profile"],
+  "properties": {
+    "name": {"type": "string"},
+    "targeting": {
+      "type": "object",
+      "required": ["titles", "seniorities", "email_statuses"],
+      "properties": {
+        "titles": {"type": "array", "items": {"type": "string"}},
+        "seniorities": {"type": "array", "items": {"type": "string"}},
+        "email_statuses": {"type": "array", "items": {"type": "string"}},
+        "domains": {"type": "array", "items": {"type": "string"}},
+        "notes": {"type": "string"}
+      }
+    },
+    "sending": {
+      "type": "object",
+      "description": "Cold sending config. warmup_status is a READINESS FLAG, not a warmer — this engine does NOT warm domains (warmup is outsourced, BASELINE Instantly; see docs/WARMUP-RND.md). The flag records that an EXTERNAL process reached 'ready'. The deliver step only sends from domains whose warmup_status is 'ready'.",
+      "required": ["domains"],
+      "properties": {
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "warmup_status", "from_addresses"],
+            "properties": {
+              "domain": {"type": "string"},
+              "spf": {"type": "boolean"},
+              "dkim": {"type": "boolean"},
+              "dmarc": {"type": "boolean"},
+              "warmup_status": {"type": "string", "enum": ["not_started", "warming", "ready"]},
+              "warmup_started_at": {"type": ["string", "null"]},
+              "from_addresses": {"type": "array", "items": {"type": "string"}, "description": "identities on this domain to rotate"},
+              "daily_cap": {"type": ["integer", "null"]}
+            }
+          }
+        }
+      }
+    },
+    "from_name": {"type": "string"},
+    "reply_to": {"type": ["string", "null"]},
+    "calendar_url": {"type": ["string", "null"]},
+    "variants": {"type": "array", "items": {"type": "string"}},
+    "cohorts": {"type": "array", "items": {"type": "string"}},
+    "cost_per_send_usd": {"type": ["number", "null"]},
+    "success": {
+      "type": "object",
+      "properties": {
+        "target_booked_rate": {"type": ["number", "null"]},
+        "max_cost_per_meeting_usd": {"type": ["number", "null"]}
+      }
+    },
+    "host_base_url": {"type": ["string", "null"]},
+    "compliance": {
+      "type": "object",
+      "description": "CAN-SPAM footer pieces. outreach-write appends these to every body; outreach-deliver gates on them. A live send is blocked until both are non-null.",
+      "properties": {
+        "postal_address": {"type": ["string", "null"], "description": "a real physical mailing address (CAN-SPAM requires one)"},
+        "unsubscribe_url": {"type": ["string", "null"], "description": "a working unsubscribe link"}
+      }
+    },
+    "economics": {
+      "type": "object",
+      "description": "Business-dashboard economics. avg_deal_value_usd lets the pipeline (won/SOM/TAM) be valued in dollars; null = the dashboard shows counts only (never a fabricated $).",
+      "properties": {
+        "avg_deal_value_usd": {"type": ["number", "null"], "description": "average value of one booked-and-closed deal (a sponsored/co-developed series)"}
+      }
+    },
+    "cube": {
+      "type": "object",
+      "description": "Dimensions `market refresh` sweeps with FREE Apollo counts to decompose TAM/SAM. All optional; seniorities are always swept from targeting.",
+      "properties": {
+        "employee_ranges": {"type": "array", "items": {"type": "string"}, "description": "Apollo organization_num_employees_ranges, e.g. \"51,200\""},
+        "industries": {"type": "array", "items": {"type": "string"}, "description": "Apollo q_organization_keyword_tags, e.g. \"food & beverage\""}
+      }
+    },
+    "market_crosscheck": {
+      "type": "object",
+      "description": "Independent denominator (US Census CBP) to bracket Apollo's inflated count. Needs a free CENSUS_API_KEY at run time. The NAICS set is the client's approximation of the ICP — refine it.",
+      "properties": {
+        "naics": {"type": "array", "items": {"type": "string"}, "description": "NAICS codes approximating the ICP, e.g. [\"311\",\"312\"]"},
+        "empszes": {"type": "string", "description": "CBP employee-size-band code (001 = all)"},
+        "geo": {"type": "string", "description": "\"us\" or a 2-digit state FIPS"}
+      }
+    },
+    "env_profile": {"type": "string", "description": "which secret bundle (SMTP/IMAP/API keys) deployment loads for this client"}
+  }
+}

@@ -24,10 +24,12 @@ You MUST use this skill to report your work progress to the AI Jobworld system.
 
 GET `/api/tasks/open?agent_id=your-agent-id` returns your open tasks (top 3).
 
-<<<<<<< HEAD
-## Event Types
+## Event Format
 
 Events are OBSERVATIONS. The `status` field is either `completed` or `blocked`.
+This is the CANONICAL schema — the server's SOP engine reads `process`, `domain`,
+`instructions`, and `kv` to accumulate replayable patterns; omit them and your
+work teaches the system nothing.
 
 ### When you complete a task
 
@@ -43,7 +45,16 @@ curl -X POST http://localhost:3847/api/emit-event \
       "agent": "researcher-1",
       "task": "task-research-modal",
       "status": "completed",
-      "desc": "Modal Labs scored 13/10 for TWI ICP. Operators hitting AI wall confirmed."
+      "desc": "Modal Labs scored 13/10 for TWI ICP. Operators hitting AI wall confirmed.",
+      "domain": "research",
+      "subdomain": "lead-qualification",
+      "process": "prospect ICP scoring",
+      "instructions": "1. Pull company info from website. 2. Score against ICP criteria (team size, AI adoption, budget signals). 3. Rate 1-10 with justification.",
+      "kv": {
+        "company": "Modal Labs",
+        "score": 13,
+        "criteria_met": ["ai_adoption", "team_size", "budget_signals"]
+      }
     },
     "who_cares": []
   }'
@@ -52,6 +63,8 @@ curl -X POST http://localhost:3847/api/emit-event \
 After you report completed, the CEO will review and either confirm or send it back.
 
 ### When you are blocked on a task
+
+Same format, but `status: "blocked"` and `desc` explains why:
 
 ```bash
 curl -X POST http://localhost:3847/api/emit-event \
@@ -65,42 +78,18 @@ curl -X POST http://localhost:3847/api/emit-event \
       "agent": "researcher-1",
       "task": "task-research-modal",
       "status": "blocked",
-      "desc": "Cannot access Modal docs - need API key from admin"
+      "desc": "Cannot access Modal docs — need API key from admin",
+      "domain": "research",
+      "subdomain": "lead-qualification",
+      "process": "prospect ICP scoring",
+      "instructions": "",
+      "kv": {"blocked_reason": "missing_api_key", "needed_from": "admin"}
     },
     "who_cares": []
   }'
 ```
-=======
-## Event Format
-
-Events are OBSERVATIONS. Every event MUST include:
-
-```json
-{
-    "round": 1,
-    "source": "researcher-1",
-    "observation": {
-        "goal_id": "goal-research-icp-fit",
-        "dept": "research",
-        "agent": "researcher-1",
-        "task": "task-research-modal",
-        "status": "completed",
-        "desc": "Modal Labs scored 13/10 for TWI ICP.",
-        "domain": "research",
-        "subdomain": "lead-qualification",
-        "process": "prospect ICP scoring",
-        "instructions": "1. Pull company info from website. 2. Score against ICP criteria (team size, AI adoption, budget signals). 3. Rate 1-10 with justification.",
-        "kv": {
-            "company": "Modal Labs",
-            "score": 13,
-            "criteria_met": ["ai_adoption", "team_size", "budget_signals"]
-        }
-    }
-}
-```
 
 **Note:** The server auto-fills `business` and `timestamp`. Do not include them.
->>>>>>> 83bee2f (feat: Docker setup + skills + server package for cave-teams deployment)
 
 ## Required Fields
 
@@ -113,17 +102,15 @@ Events are OBSERVATIONS. Every event MUST include:
 | observation.agent | Agent reporting |
 | observation.task | Task ID being observed |
 | observation.status | `completed` OR `blocked` |
-<<<<<<< HEAD
-| observation.desc | Notification string describing what happened |
-
-**Note:** The server generates `timestamp` automatically. Do not include it in your payload.
-=======
 | observation.desc | What happened — the result |
 | observation.domain | Business function bucket (enum: ops, sales, marketing, engineering, finance, hr, legal, admin, research, content, growth, support, bi, product) |
 | observation.subdomain | Specific area within the domain (free text) |
 | observation.process | Name of the process you are doing (free text — be consistent, reuse names for the same type of work) |
 | observation.instructions | How to reproduce this result. Write this as if teaching someone who has never done this before. |
 | observation.kv | Key-value data — structured output of your work (parameters, scores, results, artifacts) |
+
+Only `goal_id` + `task` + `status` move task state (`completed` → Supposedly Done,
+`blocked` → Blocked). The rest is the learning payload.
 
 ## Why Instructions Matter
 
@@ -135,28 +122,3 @@ Every event you report becomes part of an SOP pattern. The `instructions` field 
 ## SOP Pattern Accumulation
 
 Events with the same `process` name automatically group into SOP patterns. The CEO can harvest patterns into replayable skills. The better your `instructions` and `kv`, the better the harvested skill.
-
-## Blocked Events
-
-When blocked, same format but `status: "blocked"` and `desc` explains why:
-
-```json
-{
-    "round": 1,
-    "source": "researcher-1",
-    "observation": {
-        "goal_id": "goal-research-icp-fit",
-        "dept": "research",
-        "agent": "researcher-1",
-        "task": "task-research-modal",
-        "status": "blocked",
-        "desc": "Cannot access Modal docs — need API key",
-        "domain": "research",
-        "subdomain": "lead-qualification",
-        "process": "prospect ICP scoring",
-        "instructions": "",
-        "kv": {"blocked_reason": "missing_api_key", "needed_from": "admin"}
-    }
-}
-```
->>>>>>> 83bee2f (feat: Docker setup + skills + server package for cave-teams deployment)

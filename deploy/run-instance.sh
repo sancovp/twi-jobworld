@@ -1,0 +1,82 @@
+#!/bin/bash
+# Launch an avi-jw instance for a given client.
+#
+#   deploy/run-instance.sh <client> [instance-name] [port]
+#   e.g. deploy/run-instance.sh b6 b6-outreach 3847
+#
+# Loads the client's secret bundle (deploy/secrets.<client>.env, gitignored) and
+# wires the worker-layer env (JW_CLIENT / JW_CLIENT_DIR / JWOUT_DB) into the
+# container. The CEO then uses run-outreach-campaign to drive the departments.
+# See .claude/rules/02-DEPLOYMENT.md and 03-STATUS.md.
+set -euo pipefail
+
+CLIENT="${1:?usage: run-instance.sh <client> [instance-name] [dashboard-port]}"
+INSTANCE="${2:-${CLIENT}-outreach}"
+# The JW image binds THREE ports: dashboard (JOBWORLD_PORT, default 8501),
+# Python API (3847, fixed in the base entrypoint), and the jwout serve sidecar
+# (8000). They must be distinct — forcing the dashboard onto 3847 collided with
+# the API. Arg 3 overrides the dashboard port only.
+DASH_PORT="${3:-8501}"
+API_PORT="3847"
+SERVE_PORT="8000"
+OUTREACH_DASH_PORT="8787"
+IMAGE="${IMAGE:-avi-jw:latest}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+CLIENT_DIR_IN_IMAGE="/agent/clients/${CLIENT}"
+[ -d "${ROOT}/clients/${CLIENT}" ] || { echo "no client config at clients/${CLIENT}"; exit 1; }
+
+# HOST_BASE_URL: ONLY the client's configured tracked-link domain. Never
+# fabricate a localhost fallback: the write/deliver skills gate tracked CTA +
+# unsubscribe links on "HOST_BASE_URL set" — a fabricated localhost value put
+# dead http://localhost:8000 links (including the CAN-SPAM unsubscribe) into
+# real outbound bodies. Unset => the skills fall back to untracked real URLs.
+HOST_BASE_URL="$(python3 -c "import json,sys; print(json.load(open('${ROOT}/clients/${CLIENT}/client.json')).get('host_base_url') or '')" 2>/dev/null || echo '')"
+HOST_URL_ARG=""
+if [ -n "$HOST_BASE_URL" ]; then
+  HOST_URL_ARG="-e HOST_BASE_URL=$HOST_BASE_URL"
+else
+  echo "NOTE: client.json.host_base_url not set — links go untracked (no localhost fallback)."
+fi
+
+SECRETS="${ROOT}/deploy/secrets.${CLIENT}.env"
+if [ -f "$SECRETS" ]; then
+  ENV_FILE_ARG="--env-file $SECRETS"
+else
+  echo "WARNING: $SECRETS not found — running WITHOUT credentials."
+  echo "         The instance will run dry (no live pull/send/video/reply)."
+  echo "         Copy deploy/secrets.example.env -> $SECRETS and fill it for a live run."
+  ENV_FILE_ARG=""
+fi
+
+# Persisted instance + run state on a named volume.
+VOLUME="${INSTANCE}-data"
+
+echo "JW dashboard http://localhost:${DASH_PORT}  ·  outreach dashboard http://localhost:${OUTREACH_DASH_PORT}  ·  API ${API_PORT}  ·  serve ${SERVE_PORT}  ·  client ${CLIENT}"
+
+# DETACH=1 (prod / update-prod.sh): run in the background with a restart policy.
+# Default (dev): interactive foreground, removed on exit.
+if [ "${DETACH:-}" = "1" ]; then
+  MODE_ARGS="-d --restart unless-stopped"
+else
+  MODE_ARGS="--rm -it"
+fi
+
+exec docker run $MODE_ARGS \
+  --name "$INSTANCE" \
+  -p "${DASH_PORT}:${DASH_PORT}" \
+  -p "${API_PORT}:${API_PORT}" \
+  -p "${SERVE_PORT}:${SERVE_PORT}" \
+  -p "127.0.0.1:${OUTREACH_DASH_PORT}:${OUTREACH_DASH_PORT}" \
+  -v "${VOLUME}:/jobworld_data" \
+  -e JOBWORLD_INSTANCE="$INSTANCE" \
+  -e JOBWORLD_PORT="$DASH_PORT" \
+  -e JW_CLIENT="$CLIENT" \
+  -e JW_CLIENT_DIR="$CLIENT_DIR_IN_IMAGE" \
+  -e JWOUT_DB="/jobworld_data/${INSTANCE}/outreach.db" \
+  -e HOST_DIR="/jobworld_data/hosted" \
+  $HOST_URL_ARG \
+  -e JWOUT_SERVE_PORT="$SERVE_PORT" \
+  -e JWOUT_DASHBOARD_PORT="$OUTREACH_DASH_PORT" \
+  $ENV_FILE_ARG \
+  "$IMAGE"
