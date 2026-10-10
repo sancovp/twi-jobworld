@@ -88,6 +88,50 @@ class JobworldHTTPServer(CAVEHTTPServer):
         def api_config():
             return {"jobworldDir": str(jw.jobworld_dir), "serverPort": self.port}
 
+        # === Instance config (THE ONE CONFIG) + secrets — the frontend config panel reads/writes
+        # these; PUT re-COMPILES the instance via render (config COMPILES the system). Secrets live in
+        # .secrets/ and are injected into .mcp.json only — never returned into any prompt/agent context.
+        def _render_now():
+            from .render import render_instance
+            return render_instance(jw.jobworld_dir)
+
+        @self.app.get("/api/instance-config")
+        def get_instance_config():
+            for name in ("config.json", "config.example.json"):
+                p = jw.jobworld_dir / name
+                if p.exists():
+                    return {"source": name, "config": json.loads(p.read_text())}
+            return {"error": "no config.json or config.example.json"}
+
+        @self.app.put("/api/instance-config")
+        def put_instance_config(data: Dict[str, Any]):
+            cfg = data.get("config", data)  # accept {config:{...}} or the raw config
+            (jw.jobworld_dir / "config.json").write_text(json.dumps(cfg, indent=2))
+            manifest = _render_now()  # config COMPILES the instance
+            jw.broadcast({"type": "config_rendered", "data": manifest})
+            return {"success": True, "rendered": manifest}
+
+        @self.app.get("/api/mcp-state")
+        def get_mcp_state():
+            p = jw.jobworld_dir / ".secrets" / "mcp_state.json"
+            if not p.exists():
+                p = jw.jobworld_dir / ".secrets" / "mcp_state.example.json"
+            if not p.exists():
+                return {"error": "no mcp_state.json"}
+            return json.loads(p.read_text())
+
+        @self.app.put("/api/mcp-state")
+        def put_mcp_state(data: Dict[str, Any]):
+            secrets_dir = jw.jobworld_dir / ".secrets"
+            secrets_dir.mkdir(parents=True, exist_ok=True)
+            (secrets_dir / "mcp_state.json").write_text(json.dumps(data, indent=2))
+            manifest = _render_now()  # re-inject keys into .mcp.json env
+            return {"success": True, "rendered": manifest}
+
+        @self.app.post("/api/render")
+        def post_render():
+            return {"success": True, "rendered": _render_now()}
+
         # === Full State ===
         @self.app.get("/api/state")
         def api_state():

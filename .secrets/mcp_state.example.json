@@ -1,0 +1,11 @@
+{
+  "_README": "MCP credentials for this jobworld instance. WRITTEN BY the frontend config-settings panel; READ BY the render step (server/render.py) ONLY. Agents NEVER see this: it lives in .secrets/ (NOT in CLAUDE.md, NOT in .claude/), so it is never loaded into any agent's context. The render step injects these values into each MCP server's `env` in .mcp.json, so the MCP authenticates while the LLM never reads the key. This is the committed EXAMPLE (empty); the live file is .secrets/mcp_state.json (gitignored). Empty until the frontend fills them.",
+  "instantly": {
+    "INSTANTLY_API_KEY": ""
+  },
+  "apollo": {
+    "_auth_mode": "api_key",
+    "_note": "api_key = the community apollo-io-mcp-server (headless, APOLLO_API_KEY). Durable one-time auth, no OAuth expiry.",
+    "APOLLO_API_KEY": ""
+  }
+}

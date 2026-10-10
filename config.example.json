@@ -1,0 +1,74 @@
+{
+  "_README": "THE ONE CONFIG. This single file drives the whole instance: it COMPILES (via server/render.py) into the CEO's CLAUDE.md, the CEO persona (agents/CEO.md), the worker personas (.claude/agents/*.md), the business-context rules (.claude/rules/*.md), the per-department skills (skills/run-dept-*/SKILL.md), and the MCP wiring (.mcp.json). It does NOT parametrize a frozen machine — the render step code-generates the system from this. The frontend config-settings panel reads/writes this file (business + departments) and .secrets/mcp_state.json (keys); on save it re-runs render. Secrets are NEVER here — they live in .secrets/mcp_state.json (agent-invisible). This is the EXAMPLE shipped with the base; an instance's live file is config.json. Unknowns are null and listed under _needs_from_client — never fabricate a value.",
+
+  "company": {
+    "name": "Example Co",
+    "mission": "One sentence: what this company exists to do.",
+    "context": "Business context in markdown. Who the company is, what it sells, the ICP in prose, the voice, the guardrails. The CEO and every worker read this (it renders into CLAUDE.md + a business-context rule). Keep it concrete.",
+    "scope_rules": "Hard guardrails the whole company must obey (e.g. 'never contact these named accounts — they are handled manually; dedupe against them before every send'). Rendered into a rules file loaded globally."
+  },
+
+  "runtime": "tmux-anthropic",
+  "_runtime_options": "tmux-anthropic = interactive `claude` in tmux on Anthropic (jobworld_agent). sdk-minimax = headless claude_agent_sdk on MiniMax-M3 with Anthropic/OAuth fallback (p_main_agent). Frontend-selectable; both consume the SAME rendered layout — only the CEO launcher differs.",
+
+  "departments": [
+    {
+      "name": "lead_gen",
+      "purpose": "Source ICP-matched leads via Apollo.",
+      "mcps": ["apollo"],
+      "agents": [
+        {
+          "name": "Lead Researcher",
+          "agentType": "general-purpose",
+          "capabilities": ["apollo-search", "icp-scoring", "dedupe"],
+          "config": {
+            "targeting": {
+              "titles": [],
+              "seniorities": [],
+              "email_statuses": ["verified"],
+              "notes": "Prose ICP: who to target and who NOT to."
+            },
+            "cube": { "employee_ranges": [], "industries": [] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "outreach",
+      "purpose": "Run cold campaigns via Instantly. From-name, sending domains, warmup and tracked links are configured INSIDE the Instantly workspace — not here.",
+      "mcps": ["instantly"],
+      "agents": [
+        {
+          "name": "Outreach Operator",
+          "agentType": "general-purpose",
+          "capabilities": ["instantly-campaign", "copywriting", "compliance"],
+          "config": {
+            "instantly_campaign_ref": null,
+            "copy": {
+              "variants": ["text_only"],
+              "positioning": "The offer/positioning the copy leads with.",
+              "cta": "The call to action (e.g. a booking link)."
+            },
+            "compliance": {
+              "postal_address": null,
+              "unsubscribe_url": null
+            }
+          }
+        }
+      ]
+    }
+  ],
+
+  "mcp_servers": {
+    "apollo":   { "type": "apollo",   "secret_ref": "apollo" },
+    "instantly":{ "type": "instantly","secret_ref": "instantly" }
+  },
+  "_mcp_note": "type selects the server template in server/render.py (RENDER_MCP_TEMPLATES). secret_ref names the block in .secrets/mcp_state.json whose values render injects into the server's env. The key never appears in config or in any prompt.",
+
+  "_needs_from_client": {
+    "instantly.INSTANTLY_API_KEY": "API key of the warmed Instantly workspace. From-name / sending domains / warmup / tracked links are all set IN Instantly, not in this config.",
+    "apollo.APOLLO_API_KEY": "Apollo API key for lead search.",
+    "outreach.compliance.postal_address": "CAN-SPAM physical mailing address (or confirm Instantly injects it).",
+    "outreach.compliance.unsubscribe_url": "Working unsubscribe link (or confirm Instantly injects it)."
+  }
+}
