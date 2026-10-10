@@ -1,0 +1,35 @@
+# Self-contained JobWorld image, built on the deploy box from PUBLIC sources (PyPI + npm).
+# No private base image, no registry, no image upload. cave-harness pulls sdna/uco/fastapi/uvicorn/anthropic.
+# Built + verified on the Hetzner box 2026-07-23 (tag jobworld-b6:box).
+FROM node:20-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3 python3-venv python3-pip tmux procps curl ca-certificates build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Claude Code CLI (the CEO runtime; authed in-container via `claude setup-token`)
+RUN npm install -g @anthropic-ai/claude-code
+
+# Python env: cave-harness (+ transitive sdna/uco/fastapi/uvicorn/anthropic)
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir cave-harness
+
+# Non-root user (claude bypassPermissions refuses root)
+RUN useradd -m -s /bin/bash ceo && mkdir -p /agent /jobworld_data /agent/.secrets
+
+# JobWorld code
+COPY server/ /agent/server/
+COPY skills/ /agent/skills/
+COPY template/ /agent/template/
+COPY config.example.json /agent/config.example.json
+COPY .secrets/mcp_state.example.json /agent/.secrets/mcp_state.example.json
+COPY clients/ /agent/clients/
+COPY docker/entrypoint-jobworld.sh /usr/local/bin/entrypoint-jobworld.sh
+RUN chmod +x /usr/local/bin/entrypoint-jobworld.sh && chown -R ceo:ceo /agent /jobworld_data /opt/venv
+
+EXPOSE 3847
+ENV JOBWORLD_INSTANCE="b6" JOBWORLD_CLIENT="b6" JOBWORLD_PORT="3847" JOBWORLD_TMUX="cave"
+USER ceo
+CMD ["/usr/local/bin/entrypoint-jobworld.sh"]
